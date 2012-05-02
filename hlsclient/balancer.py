@@ -8,7 +8,7 @@ class Balancer(object):
         '''
         ``paths`` is a dict returned from ``discover.discover()``
         '''
-        pass
+        self.paths = paths
 
     def notify_modified(self, server, path):
         '''
@@ -28,7 +28,8 @@ class Balancer(object):
         '''
         Returns a list of ``PlaylistResource``s
         '''
-        return []
+        for path, servers in self.paths.items():
+            yield PlaylistResource(servers[0], path)
 
 
 class PlaylistResource(object):
@@ -37,5 +38,8 @@ class PlaylistResource(object):
         self.server = server
         self.path = path
 
-    def __unicode__(self):
+    def __str__(self):
         return self.server + self.path
+
+    def __unicode__(self):
+        return str(self)
