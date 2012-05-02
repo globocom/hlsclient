@@ -1,4 +1,5 @@
 from collections import defaultdict
+from fms import FMS
 
 def discover(config):
     '''
@@ -10,7 +11,12 @@ def discover(config):
        '/path2.m3u8': ['server3', 'server4', 'server5']}
 
     '''
-    raise NotImplementedError
+    port = int(config.get('discover', 'port'))
+    user = config.get('discover', 'user')
+    password = config.get('discover', 'password')
+    servers = [server.strip() for server in config.get('discover', 'servers').split('\n')]
+    fms_servers = [FMS(server, port, user, password) for server in servers]
+    return discover_from_servers(fms_servers)
 
 def discover_from_servers(fms_servers):
     paths = defaultdict(list)

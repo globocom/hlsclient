@@ -1,3 +1,6 @@
+import ConfigParser
+import io
+
 from fms import FMS
 from hlsclient.discover import discover_fms
 
@@ -52,3 +55,28 @@ def test_should_discover_paths_from_fms_servers(monkeypatch):
 	}
 	servers = ['server1', 'server2', 'server3']
 	assert expected == discover_fms.discover_from_servers(servers)
+
+def test_should_discover_servers_from_config_file(monkeypatch):
+	sample_config = """[discover]
+backend = discover.fms
+port = 1111
+user = user
+password = password
+servers = backend1.globoi.com
+          backend2.globoi.com
+          backend3.globoi.com
+"""
+	config = ConfigParser.RawConfigParser()
+	config.readfp(io.BytesIO(sample_config))
+	FAKE_RESPONSE = {'/path': ['server']}
+	def fake_discover_from_servers(fms_servers):
+		for i, server in enumerate(fms_servers):
+			assert server.port == 1111
+			assert server.username == 'user'
+			assert server.password == 'password'
+			assert server.server == 'backend%d.globoi.com' % (i + 1)
+		return FAKE_RESPONSE
+
+	monkeypatch.setattr(discover_fms, 'discover_from_servers',
+		fake_discover_from_servers)
+	assert FAKE_RESPONSE == discover_fms.discover(config)
