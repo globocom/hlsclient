@@ -5,7 +5,7 @@ class Balancer(object):
     '''
     Controls witch server is active for a playlist (m3u8)
     '''
-    NOT_MODIFIED_TOLERANCE = 2 # in seconds
+    NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
     def update(self, paths):
         '''
@@ -20,7 +20,7 @@ class Balancer(object):
         '''
         Remembers that a given server returned a new playlist
         '''
-        self.modified_at[path] = datetime.datetime.now()
+        self.modified_at[path] = self._now()
 
     def notify_error(self, server, path):
         '''
@@ -54,9 +54,14 @@ class Balancer(object):
         if not last_change:
             # This server is new, so it can't be obsolete
             return False
-        delta_from_last_change = datetime.datetime.now() - last_change
+        delta_from_last_change = self._now() - last_change
         delta_tolerance = datetime.timedelta(seconds=self.NOT_MODIFIED_TOLERANCE)
         return delta_from_last_change > delta_tolerance
+
+    def _now(self):
+        # The only reason for this to be a method
+        # is that it's easier to monkey patch it
+        return datetime.datetime.now()
 
 
 class PlaylistResource(object):

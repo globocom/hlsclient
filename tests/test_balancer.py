@@ -1,4 +1,4 @@
-import time
+import datetime
 from hlsclient.balancer import Balancer
 
 def test_balancer_returns_active_server_if_its_the_only_one():
@@ -60,21 +60,23 @@ def test_active_server_does_not_change_if_backup_fails():
 	# Assert that the active server remains the same
 	assert [SERVERS[0]] == [s.server for s in b.actives]
 
-def test_active_server_changes_if_playlist_not_modified_for_a_while():
+def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch):
 	PATH = '/path'
 	SERVERS = ['server1', 'server2']
 	paths = {PATH: SERVERS}
 	b = Balancer()
 	b.update(paths)
 
+	now = datetime.datetime.now()
+
 	assert [SERVERS[0]] == [s.server for s in b.actives]
 	b.notify_modified(SERVERS[0], PATH)
 
-	# 10 seconds later and playlist has not changed
-	time.sleep(3)
+	# 20 seconds later and playlist has not changed
+	monkeypatch.setattr(b, '_now', lambda: now + datetime.timedelta(seconds=20))
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
-	# more 10 seconds later but backup is being updated
-	time.sleep(3)
+	# more 20 seconds later but backup is being updated
+	monkeypatch.setattr(b, '_now', lambda: now + datetime.timedelta(seconds=40))
 	b.notify_modified(SERVERS[1], PATH)
 	assert [SERVERS[1]] == [s.server for s in b.actives]
