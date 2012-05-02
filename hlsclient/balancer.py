@@ -1,3 +1,4 @@
+from collections import deque
 
 class Balancer(object):
     '''
@@ -8,7 +9,9 @@ class Balancer(object):
         '''
         ``paths`` is a dict returned from ``discover.discover()``
         '''
-        self.paths = paths
+        self.paths = {}
+        for path, servers in paths.items():
+            self.paths[path] = deque(servers)
 
     def notify_modified(self, server, path):
         '''
@@ -21,7 +24,7 @@ class Balancer(object):
         Remembers that a given server failed.
         This immediately changes the active server for this path, is another one exists.
         '''
-        pass
+        self.paths[path].rotate(1)
 
     @property
     def actives(self):
