@@ -1,3 +1,4 @@
+import importlib
 
 def discover(config):
     '''
@@ -9,4 +10,7 @@ def discover(config):
        '/path2.m3u8': ['server3', 'server4', 'server5']}
 
     '''
-    raise NotImplementedError
+    module_name = config.get('discover', 'backend')
+    print module_name
+    discover_module = importlib.import_module(module_name)
+    return discover_module.discover(config)
