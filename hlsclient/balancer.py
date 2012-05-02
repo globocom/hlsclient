@@ -4,6 +4,7 @@ class Balancer(object):
     '''
     Controls witch server is active for a playlist (m3u8)
     '''
+    NOT_MODIFIED_TOLERANCE = 10 # in seconds
 
     def update(self, paths):
         '''
@@ -24,7 +25,8 @@ class Balancer(object):
         Remembers that a given server failed.
         This immediately changes the active server for this path, is another one exists.
         '''
-        self.paths[path].rotate(-1)
+        if self._active_server_for_path(path) == server:
+            self._change_active_server(path)
 
     @property
     def actives(self):
@@ -33,6 +35,12 @@ class Balancer(object):
         '''
         for path, servers in self.paths.items():
             yield PlaylistResource(servers[0], path)
+
+    def _active_server_for_path(self, path):
+        return self.paths[path][0]
+
+    def _change_active_server(self, path):
+        self.paths[path].rotate(-1)
 
 
 class PlaylistResource(object):
