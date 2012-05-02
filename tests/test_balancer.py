@@ -33,7 +33,11 @@ def test_active_server_changes_if_error_detected():
 
 	# Notify that active server has failed
 	assert [SERVERS[0]] == [s.server for s in b.actives]
-	b.notify_error(SERVERS[0], PATH)
 
 	# Assert that the backup assumes
+	b.notify_error(SERVERS[0], PATH)
 	assert [SERVERS[1]] == [s.server for s in b.actives]
+
+	# Assert that the first server resumes if backup fails
+	b.notify_error(SERVERS[1], PATH)
+	assert [SERVERS[0]] == [s.server for s in b.actives]
