@@ -24,7 +24,7 @@ class Balancer(object):
         Remembers that a given server failed.
         This immediately changes the active server for this path, is another one exists.
         '''
-        self.paths[path].rotate(1)
+        self.paths[path].rotate(-1)
 
     @property
     def actives(self):

@@ -26,7 +26,7 @@ def test_balancer_supports_multiple_paths():
 
 def test_active_server_changes_if_error_detected():
 	PATH = '/path'
-	SERVERS = ['server1', 'server2']
+	SERVERS = ['server1', 'server2', 'server3']
 	paths = {PATH: SERVERS}
 	b = Balancer()
 	b.update(paths)
@@ -34,10 +34,13 @@ def test_active_server_changes_if_error_detected():
 	# Notify that active server has failed
 	assert [SERVERS[0]] == [s.server for s in b.actives]
 
-	# Assert that the backup assumes
+	# Assert that the backups assume
 	b.notify_error(SERVERS[0], PATH)
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
-	# Assert that the first server resumes if backup fails
 	b.notify_error(SERVERS[1], PATH)
+	assert [SERVERS[2]] == [s.server for s in b.actives]
+
+	# Assert that the first server resumes if backup fails
+	b.notify_error(SERVERS[2], PATH)
 	assert [SERVERS[0]] == [s.server for s in b.actives]
