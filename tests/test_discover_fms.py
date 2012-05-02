@@ -2,15 +2,14 @@ from fms import FMS
 from hlsclient.discover import discover_fms
 
 def test_should_generate_m3u8_path():
-	server = 'example.com'
 	app = 'live_hls'
 	instance = 'appInst'
 	event = 'bbb'
 	stream = 'cam1'
 
-	expected = 'http://' + server + '/hls-live/' + app + '/' + \
-		instance + '/' + event + '/' + stream + '.m3u8'
-	path = discover_fms.m3u8_path(server, app, instance, event, stream)
+	expected = '/hls-live/' + app + '/' + instance + \
+		'/' + event + '/' + stream + '.m3u8'
+	path = discover_fms.m3u8_path(app, instance, event, stream)
 	assert expected == path
 
 def test_should_list_streams(monkeypatch):
