@@ -1,0 +1,7 @@
+certifi==0.0.8
+chardet==1.0.1
+-e git+git@github.com:jbochi/fms.git@7aec98c1c100cb0de9847b3b55ce6d9fd6235819#egg=fms-dev
+py==1.4.7
+pytest==2.2.3
+requests==0.11.2
+wsgiref==0.1.2
