@@ -11,6 +11,5 @@ def discover(config):
 
     '''
     module_name = config.get('discover', 'backend')
-    print module_name
     discover_module = importlib.import_module(module_name)
     return discover_module.discover(config)
