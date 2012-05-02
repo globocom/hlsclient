@@ -34,3 +34,21 @@ def test_should_list_m3u8_paths(monkeypatch):
 		{'app/inst': ['stream']})
 	assert ['/hls-live/app/inst/stream/stream.m3u8'] == \
 		list(discover_fms.server_m3u8_paths(fms_server))
+
+def test_should_discover_paths_from_fms_servers(monkeypatch):
+	paths = {
+		'server1': ['/path1.m3u8', '/path2.m3u8'],
+		'server2': ['/path1.m3u8'],
+		'server3': ['/path2.m3u8'],
+	}
+	def fake_server_m3u8_paths(server):
+		return paths[server]
+
+	monkeypatch.setattr(discover_fms, 'server_m3u8_paths',
+		fake_server_m3u8_paths)
+
+	expected = {'/path1.m3u8': ['server1', 'server2'],
+                '/path2.m3u8': ['server1', 'server3'],
+	}
+	servers = ['server1', 'server2', 'server3']
+	assert expected == discover_fms.discover_from_servers(servers)

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 def discover(config):
     '''
     Receives the extra configuration parameters from [discover] section
@@ -9,6 +11,13 @@ def discover(config):
 
     '''
     raise NotImplementedError
+
+def discover_from_servers(fms_servers):
+    paths = defaultdict(list)
+    for server in fms_servers:
+        for path in server_m3u8_paths(server):
+            paths[path].append(server)
+    return paths
 
 def server_m3u8_paths(fms_server):
     '''
