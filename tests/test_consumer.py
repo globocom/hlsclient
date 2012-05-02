@@ -39,9 +39,10 @@ def test_if_consume_downloads_key_file(monkeypatch):
         assert '/key' == uri
         assert local_path == '/local_path'
         called_args.append(uri)
+        return True
     monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
         fake_download_to_file)
-    hlsclient.consumer.consume('m3u8', '/local_path')
+    assert hlsclient.consumer.consume('m3u8', '/local_path')
     assert 1 == len(called_args)
 
 def test_if_consume_downloads_segments(monkeypatch):
@@ -56,7 +57,22 @@ def test_if_consume_downloads_segments(monkeypatch):
     def fake_download_to_file(uri, local_path):
         assert local_path == '/path'
         called_args.append(uri)
+        return True
     monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
         fake_download_to_file)
-    hlsclient.consumer.consume('m3u8', '/path')
+    assert hlsclient.consumer.consume('m3u8', '/path')
     assert ['/path1', '/path2'] == called_args
+
+def test_if_consume_returns_false_if_there_is_no_new_file(monkeypatch):
+    class FakeM3U8(BaseFakeM3U8):
+        @property
+        def segments(self):
+            return [Segment(uri='/path1'),
+                    Segment(uri='/path2')]
+    monkeypatch.setattr(m3u8.model, 'M3U8', FakeM3U8)
+
+    def fake_download_to_file(uri, local_path):
+        return False
+    monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
+        fake_download_to_file)
+    assert not hlsclient.consumer.consume('m3u8', '/path')

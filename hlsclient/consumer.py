@@ -5,11 +5,15 @@ def consume(m3u8_path, destination_path):
     playlist = m3u8.model.M3U8()
     playlist.load(m3u8_path)
 
-    if playlist.key:
-        download_to_file(playlist.key.uri, destination_path)
 
-    return any([download_to_file(segment.uri, destination_path) for
-        segment in playlist.segments])
+    files_to_download = []
+    if playlist.key:
+        files_to_download.append(playlist.key.uri)
+
+    files_to_download.extend([segment.uri for segment in playlist.segments])
+    downloaded = [download_to_file(f, destination_path) for f
+        in files_to_download]
+    return any(downloaded)
 
 def download_to_file(uri, local_path):
     "Retrives the file if it does not exist locally"
