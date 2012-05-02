@@ -1,5 +1,7 @@
 from collections import namedtuple
 import m3u8
+import urllib
+
 import hlsclient.consumer
 
 Key = namedtuple('Key', 'uri')
@@ -76,3 +78,15 @@ def test_if_consume_returns_false_if_there_is_no_new_file(monkeypatch):
     monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
         fake_download_to_file)
     assert not hlsclient.consumer.consume('m3u8', '/path')
+
+def test_if_download_to_file_saves_the_file_with_correct_path(monkeypatch):
+    called_args = []
+    def fake_urlretrieve(url, filename):
+        called_args.append([url, filename])
+    monkeypatch.setattr(urllib, 'urlretrieve', fake_urlretrieve)
+
+    SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
+    hlsclient.consumer.download_to_file(SEGMENT_URI, '/tmp/')
+    assert 1 == len(called_args)
+    assert SEGMENT_URI == called_args[0][0]
+    assert '/tmp/chunk.ts' == called_args[0][1]
