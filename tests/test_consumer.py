@@ -1,6 +1,7 @@
 from collections import namedtuple
 import m3u8
 import urllib
+import os
 
 import hlsclient.consumer
 
@@ -90,3 +91,17 @@ def test_if_download_to_file_saves_the_file_with_correct_path(monkeypatch):
     assert 1 == len(called_args)
     assert SEGMENT_URI == called_args[0][0]
     assert '/tmp/chunk.ts' == called_args[0][1]
+
+def test_if_download_to_file_does_nothing_if_file_already_exists(monkeypatch):
+    called_args = []
+    def fake_urlretrieve(url, filename):
+        called_args.append([url, filename])
+    monkeypatch.setattr(urllib, 'urlretrieve', fake_urlretrieve)
+
+    def fake_exists(path):
+        return True
+    monkeypatch.setattr(os.path, 'exists', fake_exists)
+
+    SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
+    hlsclient.consumer.download_to_file(SEGMENT_URI, '/tmp/')
+    assert 0 == len(called_args)
