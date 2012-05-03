@@ -1,7 +1,7 @@
 certifi==0.0.8
 chardet==1.0.1
--e git+git@github.com:jbochi/fms.git@7aec98c1c100cb0de9847b3b55ce6d9fd6235819#egg=fms-dev
--e git+git@github.com:globocom/m3u8.git@33b1c4c60ebfc380e8f608682ec112d6190319dd#egg=m3u8-dev
+-e git+git@github.com:jbochi/fms.git@4ce157ebf1c23025c41754c9d4f916509cd3df7d#egg=fms-dev
+-e git+git@github.com:globocom/m3u8.git@f267dfec423e3eb63acfd016398a94918127f0c1#egg=m3u8-dev
 py==1.4.7
 pytest==2.2.3
 requests==0.11.2
