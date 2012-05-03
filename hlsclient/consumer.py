@@ -6,8 +6,7 @@ from urlparse import urlparse
 
 def consume(m3u8_path, destination_path):
     "Receives a m3u8 path and copies all playlist files to a local path"
-    playlist = m3u8.model.M3U8()
-    playlist.load(m3u8_path)
+    playlist = m3u8.load(m3u8_path)
 
     files_to_download = []
     if playlist.key:
