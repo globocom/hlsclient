@@ -1,9 +1,12 @@
+from collections import namedtuple
 import datetime
 from hlsclient.balancer import Balancer
 
+FMS = namedtuple('FMS', ['server', 'port'])
+
 def test_balancer_returns_active_server_if_its_the_only_one():
 	PATH = '/path'
-	SERVER = 'server'
+	SERVER = FMS('server', port=80)
 	paths = {PATH: [SERVER]}
 	b = Balancer()
 	b.update(paths)
@@ -11,7 +14,7 @@ def test_balancer_returns_active_server_if_its_the_only_one():
 	assert 1 == len(active_playlists)
 	assert PATH == active_playlists[0].path
 	assert SERVER == active_playlists[0].server
-	assert SERVER + PATH == str(active_playlists[0])
+	assert 'http://' + SERVER.server + ':' + str(SERVER.port) + PATH == str(active_playlists[0])
 
 def test_balancer_supports_multiple_paths():
 	PATH1 = '/path1'
