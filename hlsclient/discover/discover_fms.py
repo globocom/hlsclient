@@ -28,12 +28,12 @@ def discover_from_servers(fms_servers):
 def server_m3u8_paths(fms_server):
     '''
     Returns a list of m3u8 paths in a server,
-    assuming that event's names are equal to stream's.
+    assuming that event's names are equal to instance's.
     '''
     for appInst, streams in server_streams(fms_server).items():
         app, inst = appInst.split('/')
         for stream in streams:
-            yield m3u8_path(app, inst, stream, stream)
+            yield m3u8_path(app, inst, inst, stream)
 
 def server_streams(fms_server):
     '''

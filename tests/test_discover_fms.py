@@ -35,7 +35,7 @@ def test_should_list_m3u8_paths(monkeypatch):
     fms_server = FMS('example.com', 1111, 'user', 'pass')
     monkeypatch.setattr(discover_fms, 'server_streams', lambda f:
         {'app/inst': ['stream']})
-    assert ['/hls-live/app/inst/stream/stream.m3u8'] == \
+    assert ['/hls-live/app/inst/inst/stream.m3u8'] == \
         list(discover_fms.server_m3u8_paths(fms_server))
 
 def test_should_discover_paths_from_fms_servers(monkeypatch):
