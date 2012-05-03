@@ -30,18 +30,19 @@ def main():
         balancer.update(paths)
 
         for resource in balancer.actives:
+            resource_path = str(resource)
+            logger.debug('Consuming %s' % resource_path)
             try:
-                logger.debug('Consuming %s' % resource)
-                resource_path = str(resource)
                 modified = consume(resource_path, destination)
+            except (IOError, OSError) as err:
+                logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
+                balancer.notify_error(resource.server, resource.path)
+            else:
                 if modified:
-                    logger.info('Notifying content modified: %s' % resource)
+                    logger.info('Notifying content modifed: %s' % resource)
                     balancer.notify_modified(resource.server, resource.path)
                 else:
-                    logger.info('Content not modified: %s' % resource)
-            except (IOError, OSError) as err:
-                logger.warning(u'Notifying error!')
-                balancer.notify_error(resource.server, resource.path)
+                    logger.debug('Content not modified: %s' % resource)
         time.sleep(2)
 
 if __name__ == "__main__":
