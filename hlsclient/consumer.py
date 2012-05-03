@@ -11,14 +11,15 @@ def consume(m3u8_uri, destination_path):
     The remote path structure is maintained under ``destination_path``
 
     '''
-    playlist = m3u8.load(m3u8_uri)
-
     full_path = build_full_path(destination_path, m3u8_uri)
+
+    playlist = m3u8.load(m3u8_uri)
 
     resources = collect_resources_to_download(playlist)
     modified = download_resources_to_files(resources, full_path)
 
     if modified:
+        playlist.basepath = full_path
         save_m3u8(playlist, m3u8_uri, full_path)
 
     return modified

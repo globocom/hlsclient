@@ -138,7 +138,9 @@ def test_if_consume_saves_m3u8_file_if_new_segment_saved(monkeypatch, tmpdir):
     # ignore existing
     hlsclient.consumer.consume('http://server/remote/path/file.m3u8', str(tmpdir.join('local_path')))
 
-    assert tmpdir.join('local_path', 'remote', 'path', 'file.m3u8') == fake_m3u8._m3u8_saved_path
+    local_path = tmpdir.join('local_path', 'remote', 'path')
+    assert local_path == fake_m3u8.basepath
+    assert local_path.join('file.m3u8') == fake_m3u8._m3u8_saved_path
 
 def test_if_consume_does_not_save_m3u8_file_if_no_segment_saved(monkeypatch, tmpdir):
     class FakeM3U8(BaseFakeM3U8):
