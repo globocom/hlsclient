@@ -1,8 +1,8 @@
 from collections import namedtuple
-import m3u8
 import urllib
 import os
-import shutil
+
+import m3u8
 
 import hlsclient.consumer
 
