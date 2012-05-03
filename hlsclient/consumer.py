@@ -19,14 +19,17 @@ def consume(m3u8_uri, destination_path):
     modified = download_resources_to_files(resources, full_path)
 
     if modified:
-        playlist.basepath = full_path
+        playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path)
 
     return modified
 
-def build_full_path(destination_path, m3u8_uri):
+def build_intermediate_path(m3u8_uri):
     url_path = urlparse(m3u8_uri).path
-    intermediate_path = os.path.dirname(url_path[1:])  # ignore first "/"
+    return os.path.dirname(url_path)
+
+def build_full_path(destination_path, m3u8_uri):
+    intermediate_path = build_intermediate_path(m3u8_uri)[1:] # ignore first "/"
     full_path = os.path.join(destination_path, intermediate_path)
     ensure_directory_exists(full_path)
     return full_path

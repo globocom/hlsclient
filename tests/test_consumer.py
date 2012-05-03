@@ -139,7 +139,6 @@ def test_if_consume_saves_m3u8_file_if_new_segment_saved(monkeypatch, tmpdir):
     hlsclient.consumer.consume('http://server/remote/path/file.m3u8', str(tmpdir.join('local_path')))
 
     local_path = tmpdir.join('local_path', 'remote', 'path')
-    assert local_path == fake_m3u8.basepath
     assert local_path.join('file.m3u8') == fake_m3u8._m3u8_saved_path
 
 def test_if_consume_does_not_save_m3u8_file_if_no_segment_saved(monkeypatch, tmpdir):
@@ -157,3 +156,19 @@ def test_if_consume_does_not_save_m3u8_file_if_no_segment_saved(monkeypatch, tmp
     hlsclient.consumer.consume('m3u8', str(tmpdir.join('local_path')))
 
     assert not fake_m3u8._m3u8_saved_path
+
+def test_if_m3u8_is_generated_with_basepath(monkeypatch, tmpdir):
+    M3U8_PATH = '/remote/path'
+    M3U8_URI = 'http://server.com' + M3U8_PATH + '/file.m3u8'
+    class FakeM3U8(BaseFakeM3U8):
+        @property
+        def segments(self):
+            return [Segment(uri='/path1'),
+                    Segment(uri='/path2')]
+
+    fake_m3u8 = FakeM3U8()
+    monkeypatch.setattr(m3u8, 'load', lambda _: fake_m3u8)
+    monkeypatch.setattr(hlsclient.consumer, 'download_to_file', lambda *args: True)
+    hlsclient.consumer.consume(M3U8_URI, str(tmpdir.join('local_path')))
+
+    assert M3U8_PATH == fake_m3u8.basepath
