@@ -39,7 +39,7 @@ def main():
                 balancer.notify_error(resource.server, resource.path)
             else:
                 if modified:
-                    logger.info('Notifying content modifed: %s' % resource)
+                    logger.info('Notifying content modified: %s' % resource)
                     balancer.notify_modified(resource.server, resource.path)
                 else:
                     logger.debug('Content not modified: %s' % resource)
