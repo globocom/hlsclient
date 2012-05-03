@@ -2,6 +2,7 @@ from collections import namedtuple
 import m3u8
 import urllib
 import os
+import shutil
 
 import hlsclient.consumer
 
@@ -102,3 +103,13 @@ def test_if_download_to_file_does_nothing_if_file_already_exists(monkeypatch):
     SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
     hlsclient.consumer.download_to_file(SEGMENT_URI, '/tmp/')
     assert 0 == len(called_args)
+
+def test_if_download_to_file_creates_intermediate_directories():
+    path_with_intermediate_directories = '/tmp/inter/go/'
+    SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
+
+    shutil.rmtree(path_with_intermediate_directories, ignore_errors=True)
+    hlsclient.consumer.download_to_file(SEGMENT_URI,
+            path_with_intermediate_directories)
+
+    assert os.path.exists(path_with_intermediate_directories)

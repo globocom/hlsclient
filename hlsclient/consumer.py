@@ -22,6 +22,10 @@ def download_to_file(uri, local_path):
     remote_path = urlparse(uri).path
     basename = os.path.basename(remote_path)
     localpath = os.path.join(local_path, basename)
+
+    if not os.path.exists(local_path):
+        os.makedirs(local_path)
+
     if not os.path.exists(localpath):
         urllib.urlretrieve(url=uri, filename=localpath)
         return True
