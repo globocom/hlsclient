@@ -3,7 +3,7 @@ import datetime
 
 class Balancer(object):
     '''
-    Controls witch server is active for a playlist (m3u8)
+    Controls which server is active for a playlist (m3u8)
     '''
     NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
