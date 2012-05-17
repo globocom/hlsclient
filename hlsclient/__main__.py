@@ -1,12 +1,15 @@
 import ConfigParser
 import logging
 import time
+import os
 
 from balancer import Balancer
 from discover import discover
 from consumer import consume
 
-def load_config(path='config.ini'):
+def load_config(path=None):
+    if path is None:
+        path = os.getenv('HLSCLIENT_CONFIG', 'config.ini')
     config = ConfigParser.RawConfigParser()
     with open(path) as f:
         config.readfp(f)
