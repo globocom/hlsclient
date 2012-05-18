@@ -17,9 +17,9 @@ We provide one discover module that points to a fixed stream and a
 second one that lists all the streams available on a set of Flash
 Media Servers (FMS).
 
-Runnning
+Running
 --------
 
 To run the client, simply run:
 
-    python hlsclient
+    python -m hlsclient
