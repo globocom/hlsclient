@@ -23,7 +23,7 @@ api_url = http://localhost:4422/tests.m3u8
     monkeypatch.setattr(hlsclient.discover, 'get_info_from_url', fake_get_info_from_url)
 
     m3u8_path = '/hls-without-mbr.m3u8'
-    servers = [Server(host='serv1.com', port=80), Server(host='serv2.com', port=80)]
+    servers = [Server(server='serv1.com', port=80), Server(server='serv2.com', port=80)]
     assert {m3u8_path: servers} == discover(config)
 
 
