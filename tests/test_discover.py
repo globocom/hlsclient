@@ -1,28 +1,30 @@
 import ConfigParser
 import io
 
-from hlsclient.discover import discover
-import hlsclient.discover.discover_fms
+import hlsclient.discover
+from hlsclient.discover import discover, Server
 
-def test_discover_uses_the_correct_backend(monkeypatch):
+def test_discovers_simple_m3u8_from_api_url_in_config(monkeypatch):
     sample_config = """[discover]
-backend = hlsclient.discover.discover_fms
-port = 1111
-user = user
-password = password
-servers = backend1.globoi.com
-          backend2.globoi.com
-          backend3.globoi.com
+api_url = http://localhost:4422/tests.m3u8
 """
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(sample_config))
-    FAKE_RESPONSE = {'/path': ['server']}
-    called_args = []
-    def fake_discover_fms(config):
-        called_args.append(config)
-        return FAKE_RESPONSE
 
-    monkeypatch.setattr(hlsclient.discover.discover_fms, 'discover',
-        fake_discover_fms)
-    assert FAKE_RESPONSE == discover(config)
-    assert [config] == called_args
+    def fake_get_info_from_url(url):
+        # m3u8 sample got from http://webme.ws/live-docs/thorp.html
+        return [{
+            'm3u8': '/hls-without-mbr.m3u8',
+            'servers': ['serv1.com', 'serv2.com'],
+            'bitrates': [],
+            'needs_index': False,
+        }]
+
+    monkeypatch.setattr(hlsclient.discover, 'get_info_from_url', fake_get_info_from_url)
+
+    m3u8_path = '/hls-without-mbr.m3u8'
+    servers = [Server(host='serv1.com', port=80), Server(host='serv2.com', port=80)]
+    assert {m3u8_path: servers} == discover(config)
+
+
+
