@@ -7,10 +7,11 @@ from m3u8.model import Segment, Key
 
 import hlsclient.consumer
 from hlsclient.consumer import collect_resources_to_download
-
+from .fake_m3u8_server import M3U8_SERVER
 
 class BaseFakeM3U8(object):
     _m3u8_saved_path = None
+    is_variant = False
 
     @property
     def key(self):
@@ -196,3 +197,25 @@ chunk4.ts
         'http://example.com/path/to/chunk4.ts',
     ]
     assert expected_resources == collect_resources_to_download(playlist)
+
+
+
+def test_variant_m3u8_consumption(tmpdir):
+    expected_downloaded = [
+        'variant-playlist.m3u8',
+        'low.m3u8',
+        'high.m3u8',
+        'low1.ts',
+        'low2.ts',
+        'high1.ts',
+        'high2.ts']
+
+    # all .m3u8 files are prefixed by {M3U8_SERVER} on our fake m3u8 server
+    # and they should be converted to our local basepath
+    hlsclient.consumer.consume(M3U8_SERVER + '/variant-playlist.m3u8', str(tmpdir))
+
+    resources_downloaded = os.listdir(str(tmpdir))
+
+    assert sorted(expected_downloaded) == sorted(resources_downloaded)
+    for fname in expected_downloaded:
+        assert M3U8_SERVER not in open(str(tmpdir.join(fname))).read()

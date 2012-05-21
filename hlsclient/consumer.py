@@ -11,15 +11,27 @@ def consume(m3u8_uri, destination_path):
     The remote path structure is maintained under ``destination_path``
 
     '''
-    full_path = build_full_path(destination_path, m3u8_uri)
-
     playlist = m3u8.load(m3u8_uri)
 
+    if playlist.is_variant:
+        return consume_variant_playlist(playlist, m3u8_uri, destination_path)
+    else:
+        return consume_single_playlist(playlist, m3u8_uri, destination_path)
+
+def consume_variant_playlist(playlist, m3u8_uri, destination_path):
+    full_path = build_full_path(destination_path, m3u8_uri)
+    save_m3u8(playlist, m3u8_uri, full_path)
+
+    for p in playlist.playlists:
+        consume(p.absolute_uri, destination_path)
+    return True
+
+def consume_single_playlist(playlist, m3u8_uri, destination_path):
+    full_path = build_full_path(destination_path, m3u8_uri)
     resources = collect_resources_to_download(playlist)
     modified = download_resources_to_files(resources, full_path)
 
     if modified:
-        playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path)
 
     return modified
@@ -43,6 +55,7 @@ def ensure_directory_exists(directory):
 
 def collect_resources_to_download(playlist):
     resources = []
+
     if playlist.key:
         resources.append(playlist.key.absolute_uri)
     resources.extend([segment.absolute_uri for segment in playlist.segments])
@@ -52,6 +65,7 @@ def download_resources_to_files(resources, destination_path):
     return any([download_to_file(r, destination_path) for r in resources])
 
 def save_m3u8(playlist, m3u8_uri, full_path):
+    playlist.basepath = build_intermediate_path(m3u8_uri)
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
 
