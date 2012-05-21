@@ -49,7 +49,6 @@ api_url = http://localhost:4422/mbr-tests.m3u8
 
     monkeypatch.setattr(hlsclient.discover, 'get_info_from_url', fake_get_info_from_url)
 
-    m3u8_path = '/hls-without-mbr.m3u8'
     low_playlist = '/hls100.m3u8'
     mid_playlist = '/hls200.m3u8'
     high_playlist = '/hls300.m3u8'

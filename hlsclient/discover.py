@@ -17,7 +17,6 @@ def discover(config):
     '''
     api_url = config.get('discover', 'api_url')
     result = {}
-    info = get_info_from_url(api_url)
     for info in get_info_from_url(api_url):
         if not info['needs_index']:
             _append_m3u8_without_mbr_to(result, info)
