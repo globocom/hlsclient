@@ -13,7 +13,7 @@ function stop_fake_server {
 }
 
 function start_fake_server {
-	python tests/fake_m3u8_server.py --m3u8-server-grep-helper 2>&1 > fake_server.log &
+	python tests/fake_m3u8_server.py --m3u8-server-grep-helper &> fake_server.log &
 }
 
 function main {
