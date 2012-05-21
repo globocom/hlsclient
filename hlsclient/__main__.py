@@ -4,7 +4,7 @@ import time
 
 from balancer import Balancer
 from discover import discover
-from consumer import consume
+from consumer import consume, random_key
 
 def load_config(path='config.ini'):
     config = ConfigParser.RawConfigParser()
@@ -23,6 +23,7 @@ def main():
     logger.debug('Config loaded')
 
     balancer = Balancer()
+    key = random_key()
 
     while True:
         paths = discover(config)
@@ -33,8 +34,8 @@ def main():
             resource_path = str(resource)
             logger.debug('Consuming %s' % resource_path)
             try:
-                modified = consume(resource_path, destination)
-            except (IOError, OSError) as err:
+                modified = consume(resource_path, destination, key)
+            except () as err: #(IOError, OSError) as err:
                 logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
                 balancer.notify_error(resource.server, resource.path)
             else:
