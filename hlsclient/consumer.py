@@ -1,7 +1,7 @@
 import os
 import errno
 import urllib
-from urlparse import urlparse
+import urlparse
 
 import m3u8
 
@@ -25,7 +25,7 @@ def consume(m3u8_uri, destination_path):
     return modified
 
 def build_intermediate_path(m3u8_uri):
-    url_path = urlparse(m3u8_uri).path
+    url_path = urlparse.urlparse(m3u8_uri).path
     return os.path.dirname(url_path)
 
 def build_full_path(destination_path, m3u8_uri):
@@ -44,8 +44,8 @@ def ensure_directory_exists(directory):
 def collect_resources_to_download(playlist):
     resources = []
     if playlist.key:
-        resources.append(playlist.key.uri)
-    resources.extend([segment.uri for segment in playlist.segments])
+        resources.append(playlist.key.absolute_uri)
+    resources.extend([segment.absolute_uri for segment in playlist.segments])
     return resources
 
 def download_resources_to_files(resources, destination_path):
@@ -57,7 +57,8 @@ def save_m3u8(playlist, m3u8_uri, full_path):
 
 def download_to_file(uri, local_path):
     "Retrives the file if it does not exist locally"
-    localpath = os.path.join(local_path, os.path.basename(uri))
+    parsed_url = urlparse.urlparse(uri)
+    localpath = os.path.join(local_path, os.path.basename(parsed_url.path))
     if not os.path.exists(localpath):
         urllib.urlretrieve(url=uri, filename=localpath)
         return True

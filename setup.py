@@ -17,6 +17,6 @@ setup(
         'hlsclient',
         ],
     install_requires=[
-        'm3u8>=0.1.0',
+        'm3u8>=0.1.1',
         ],
 )
