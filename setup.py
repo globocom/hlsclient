@@ -10,14 +10,13 @@ setup(
     long_description=README,
     author='Globo.com',
     url='https://github.com/globocom/hlsclient',
-    version='0.1.2',
+    version='0.1.4',
     zip_safe=False,
     include_package_data=True,
     packages=[
         'hlsclient',
         ],
     install_requires=[
-        'requests==0.11.2',
-        'm3u8==0.1.0',
+        'm3u8>=0.1.0',
         ],
 )
