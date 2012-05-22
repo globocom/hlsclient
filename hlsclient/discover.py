@@ -28,14 +28,14 @@ def discover(config):
                 'h100.m3u8': [Server('http://server1'), Server('http://server3')],
                 'h200.m3u8': [Server('http://server2'), Server('http://server3')],
             },
-            'is_mbr': True,
+            'needs_index': True,
         },
 
         'playlist_without_m3u8.m3u8':{
             'streams': {
                 'playlist_without_m3u8.m3u8': [Server('http://server1'), Server('http://server2')],
             },
-            'is_mbr': False,
+            'needs_index': False,
         }
     }
 
