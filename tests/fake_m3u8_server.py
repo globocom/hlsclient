@@ -4,21 +4,40 @@ import bottle
 
 M3U8_SERVER = 'http://localhost:8845'
 
+VARIANT_PLAYLIST = '''\
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2560000
+/high.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=1280000
+/low.m3u8
+'''.format(server=M3U8_SERVER)
+
 
 @route('/<:re:.*>.ts')
 def all_ts():
     return 'FAKE TS\n'
 
+@route('/variant.json')
+def variant_json():
+    return '''\
+{
+    "actives": [{
+        "m3u8": "/hls-with-mbr.m3u8",
+        "servers": [],
+        "bitrates": [
+            {"m3u8": "/low.m3u8", "servers": ["http://serv1.com:80", "http://serv2.com:1234"], "bandwidth": 1280000},
+            {"m3u8": "/high.m3u8", "servers": ["http://serv1.com:81", "http://serv2.com:2345"], "bandwidth": 2560000}
+        ],
+        "needs_index": true
+    }]
+}
+'''
+
+
 @route('/variant-playlist.m3u8')
 def variant_playlist():
     response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
-    return '''\
-#EXTM3U
-#EXT-X-STREAM-INF:PROGRAM-ID=1, BANDWIDTH=1280000
-{server}/low.m3u8
-#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=7680000
-{server}/high.m3u8
-'''.format(server=M3U8_SERVER)
+    return VARIANT_PLAYLIST
 
 
 @route('/low.m3u8')

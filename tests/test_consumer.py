@@ -1,7 +1,6 @@
 from collections import namedtuple
 import urllib
 import os
-
 import m3u8
 from m3u8.model import Segment, Key
 

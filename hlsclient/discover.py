@@ -1,8 +1,10 @@
+import os
 import json
 import urllib
 import urlparse
 from collections import namedtuple
 
+import m3u8
 
 Server = namedtuple('Server', 'server port')
 
@@ -14,9 +16,33 @@ class PlaylistDiscover(object):
     def get_paths(self, playlists):
         paths = {}
         for m3u8_uri, info in playlists.items():
-            paths.update(info['streams'])
+            paths.update(self.get_servers(info['streams']))
 
         return paths
+
+    def create_index_for_variant_playlists(self, destination):
+        for m3u8_uri, info in self.playlists.items():
+            if info['needs_index']:
+                self.create_variant_m3u8(info, destination + m3u8_uri)
+
+    def create_variant_m3u8(self, info, destination):
+        variant_m3u8 = m3u8.M3U8()
+        for m3u8_uri in info['streams']:
+            bandwidth = self.get_bandwidth(info, m3u8_uri)
+            playlist = m3u8.Playlist(m3u8_uri, stream_info={'bandwidth': bandwidth, 'program_id': '1'}, baseuri="")
+            variant_m3u8.add_playlist(playlist)
+
+        variant_m3u8.dump(destination)
+
+    def get_bandwidth(self, info, m3u8_uri):
+        return str(info['streams'][m3u8_uri]['bandwidth'])
+
+    def get_servers(self, streams):
+        result = {}
+        for m3u8_uri, info in streams.items():
+            result[m3u8_uri] = info['servers']
+
+        return result
 
 def discover(config):
     '''
@@ -25,15 +51,24 @@ def discover(config):
     {
         'playlist_with_mbr.m3u8': {
             'streams': {
-                'h100.m3u8': [Server('http://server1'), Server('http://server3')],
-                'h200.m3u8': [Server('http://server2'), Server('http://server3')],
+                'h100.m3u8': {
+                    'servers': [Server('http://server1'), Server('http://server3')],
+                    'bandwidth': '10000'
+                },
+                'h200.m3u8': {
+                    'servers': [Server('http://server2'), Server('http://server3')],
+                    'bandwidth': '10000'
+                }
             },
             'needs_index': True,
         },
 
         'playlist_without_m3u8.m3u8':{
             'streams': {
-                'playlist_without_m3u8.m3u8': [Server('http://server1'), Server('http://server2')],
+                'playlist_without_m3u8.m3u8': {
+                    'servers': [Server('http://server1'), Server('http://server2')],
+                    'bandwidth': '1000000'
+                }
             },
             'needs_index': False,
         }
@@ -63,14 +98,15 @@ def get_info_from_url(url):
 
 def _append_m3u8_without_mbr_to(result, info):
     playlist = info['m3u8']
-    result[playlist] = _build_servers(info['servers'])
-
+    result[playlist]['servers'] = _build_servers(info['servers'])
 
 def _append_m3u8_with_mbr_to(result, info):
     bitrates = info['bitrates']
     for m3u8 in bitrates:
         playlist = m3u8['m3u8']
-        result[playlist] = _build_servers(m3u8['servers'])
+        result[playlist] = {}
+        result[playlist]['servers'] = _build_servers(m3u8['servers'])
+        result[playlist]['bandwidth'] = m3u8['bandwidth']
 
 def _build_servers(servers):
     result = []
