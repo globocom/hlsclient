@@ -4,7 +4,7 @@ import time
 import os
 
 from balancer import Balancer
-from discover import discover
+from discover import PlaylistDiscover
 from consumer import consume
 
 def load_config(path=None):
@@ -28,8 +28,11 @@ def main():
     balancer = Balancer()
 
     while True:
-        paths = discover(config)
+        d = PlaylistDiscover(config)
+        paths = d.playlist_paths
+
         logger.info(u'Discovered the following paths: %s' % paths.items())
+
         balancer.update(paths)
 
         for resource in balancer.actives:
