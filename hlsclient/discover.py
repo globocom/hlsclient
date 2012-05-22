@@ -16,28 +16,28 @@ class PlaylistDiscover(object):
     def get_paths(self, playlists):
         paths = {}
         for m3u8_uri, info in playlists.items():
-            paths.update(self.get_servers(info['streams']))
+            paths.update(self._get_servers(info['streams']))
 
         return paths
 
     def create_index_for_variant_playlists(self, destination):
         for m3u8_uri, info in self.playlists.items():
             if info['needs_index']:
-                self.create_variant_m3u8(info, destination + m3u8_uri)
+                self._generate_variant_playlist(info, destination + m3u8_uri)
 
-    def create_variant_m3u8(self, info, destination):
+    def _generate_variant_playlist(self, info, destination):
         variant_m3u8 = m3u8.M3U8()
         for m3u8_uri in info['streams']:
-            bandwidth = self.get_bandwidth(info, m3u8_uri)
+            bandwidth = self._get_bandwidth(info, m3u8_uri)
             playlist = m3u8.Playlist(m3u8_uri, stream_info={'bandwidth': bandwidth, 'program_id': '1'}, baseuri="")
             variant_m3u8.add_playlist(playlist)
 
         variant_m3u8.dump(destination)
 
-    def get_bandwidth(self, info, m3u8_uri):
+    def _get_bandwidth(self, info, m3u8_uri):
         return str(info['streams'][m3u8_uri]['bandwidth'])
 
-    def get_servers(self, streams):
+    def _get_servers(self, streams):
         result = {}
         for m3u8_uri, info in streams.items():
             result[m3u8_uri] = info['servers']
