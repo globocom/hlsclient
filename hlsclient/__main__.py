@@ -29,6 +29,7 @@ def main():
 
     while True:
         d = PlaylistDiscover(config)
+        d.create_index_for_variant_playlists(destination)
         paths = d.playlist_paths
 
         logger.info(u'Discovered the following paths: %s' % paths.items())
