@@ -30,8 +30,7 @@ api_url = http://localhost:4422/tests.m3u8
     servers = [Server(server='http://serv1.com', port=80), Server(server='http://serv2.com', port=80)]
     assert {playlist: servers} == discover.playlist_paths
 
-
-def test_discovers_simple_m3u8_from_api_url_in_config(monkeypatch):
+def test_discovers_variant_m3u8_from_api_url_in_config(monkeypatch):
     sample_config = """[discover]
 api_url = http://localhost:4422/mbr-tests.m3u8
 """
