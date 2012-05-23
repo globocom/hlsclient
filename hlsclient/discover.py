@@ -84,10 +84,10 @@ def discover(config):
         streams = {}
         playlists[m3u8_uri] = {'needs_index': info['needs_index'], 'streams': streams}
 
-        if not info['needs_index']:
-            _append_m3u8_without_mbr_to(streams, info)
-        else:
+        if info['needs_index']:
             _append_m3u8_with_mbr_to(streams, info)
+        else:
+            _append_m3u8_without_mbr_to(streams, info)
 
     return playlists
 
