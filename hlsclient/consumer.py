@@ -95,7 +95,7 @@ def download_to_file(uri, destination_path):
 
 # TODO: All methods below don't have unittests!
 #
-def random_key():
+def random_key(key_name):
     class IV:
         def __init__(self, iv):
             self.iv = iv
@@ -103,9 +103,15 @@ def random_key():
         def __str__(self):
             return '0X' + self.iv.encode('hex')
 
-    key = Key(method='AES-128', uri='mykey.bin', baseuri="/tmp/hls",  iv=IV(os.urandom(16)))
+    key = Key(method='AES-128', uri=key_name, baseuri="/tmp/hls",  iv=IV(os.urandom(16)))
     key.key = os.urandom(16)
     return key
+
+def save_new_key(key, destination_path):
+    filename = os.path.join(destination_path, os.path.basename(key.uri))
+    if not os.path.exists(filename):
+        with open(filename, "w") as f:
+            f.write(key.key)
 
 def encrypt(data, key):
     encoder = PKCS7Encoder()
