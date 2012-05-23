@@ -71,7 +71,7 @@ class PlaylistResource(object):
         self.path = path
 
     def __str__(self):
-        return 'http://{server}:{port}{path}'.format(
+        return '{server}:{port}{path}'.format(
             server=self.server.server,
             port=self.server.port,
             path=self.path)

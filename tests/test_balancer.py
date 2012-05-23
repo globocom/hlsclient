@@ -6,7 +6,7 @@ FMS = namedtuple('FMS', ['server', 'port'])
 
 def test_balancer_returns_active_server_if_its_the_only_one():
 	PATH = '/path'
-	SERVER = FMS('server', port=80)
+	SERVER = FMS('http://server', port=80)
 	paths = {PATH: [SERVER]}
 	b = Balancer()
 	b.update(paths)
@@ -14,12 +14,12 @@ def test_balancer_returns_active_server_if_its_the_only_one():
 	assert 1 == len(active_playlists)
 	assert PATH == active_playlists[0].path
 	assert SERVER == active_playlists[0].server
-	assert 'http://' + SERVER.server + ':' + str(SERVER.port) + PATH == str(active_playlists[0])
+	assert SERVER.server + ':' + str(SERVER.port) + PATH == str(active_playlists[0])
 
 def test_balancer_supports_multiple_paths():
 	PATH1 = '/path1'
 	PATH2 = '/path2'
-	SERVER = 'server'
+	SERVER = 'http://server'
 	paths = {PATH1: [SERVER], PATH2: [SERVER]}
 	b = Balancer()
 	b.update(paths)
@@ -30,7 +30,7 @@ def test_balancer_supports_multiple_paths():
 
 def test_active_server_changes_if_error_detected():
 	PATH = '/path'
-	SERVERS = ['server1', 'server2', 'server3']
+	SERVERS = ['http://server1', 'http://server2', 'http://server3']
 	paths = {PATH: SERVERS}
 	b = Balancer()
 	b.update(paths)
@@ -51,7 +51,7 @@ def test_active_server_changes_if_error_detected():
 
 def test_active_server_does_not_change_if_backup_fails():
 	PATH = '/path'
-	SERVERS = ['server1', 'server2']
+	SERVERS = ['http://server1', 'http://server2']
 	paths = {PATH: SERVERS}
 	b = Balancer()
 	b.update(paths)
@@ -65,7 +65,7 @@ def test_active_server_does_not_change_if_backup_fails():
 
 def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch):
 	PATH = '/path'
-	SERVERS = ['server1', 'server2']
+	SERVERS = ['http://server1', 'http://server2']
 	paths = {PATH: SERVERS}
 	b = Balancer()
 	b.update(paths)

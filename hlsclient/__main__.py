@@ -1,12 +1,15 @@
 import ConfigParser
 import logging
 import time
+import os
 
 from balancer import Balancer
-from discover import discover
+from discover import PlaylistDiscover
 from consumer import consume, random_key
 
-def load_config(path='config.ini'):
+def load_config(path=None):
+    if path is None:
+        path = os.getenv('HLSCLIENT_CONFIG', 'config.ini')
     config = ConfigParser.RawConfigParser()
     with open(path) as f:
         config.readfp(f)
@@ -26,8 +29,12 @@ def main():
     key = random_key()
 
     while True:
-        paths = discover(config)
+        d = PlaylistDiscover(config)
+        d.create_index_for_variant_playlists(destination)
+        paths = d.playlist_paths
+
         logger.info(u'Discovered the following paths: %s' % paths.items())
+
         balancer.update(paths)
 
         for resource in balancer.actives:

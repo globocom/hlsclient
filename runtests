@@ -8,8 +8,18 @@ function run {
     PYTHONPATH=. py.test -vs tests/
 }
 
+function stop_fake_server {
+	ps aux | grep m3u8-server-grep-helper | awk '{print $2 }' | xargs kill -9
+}
+
+function start_fake_server {
+	python tests/fake_m3u8_server.py --m3u8-server-grep-helper &> fake_server.log &
+}
+
 function main {
     install_deps
+	stop_fake_server
+	start_fake_server
     run
 }
 
