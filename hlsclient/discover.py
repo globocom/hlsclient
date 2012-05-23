@@ -98,7 +98,7 @@ def get_info_from_url(url):
 
 def _append_m3u8_without_mbr_to(result, info):
     playlist = info['m3u8']
-    result[playlist]['servers'] = _build_servers(info['servers'])
+    result[playlist] = {'servers': _build_servers(info['servers'])}
 
 def _append_m3u8_with_mbr_to(result, info):
     bitrates = info['bitrates']
