@@ -13,10 +13,6 @@ VARIANT_PLAYLIST = '''\
 '''.format(server=M3U8_SERVER)
 
 
-@route('/<:re:.*>.ts')
-def all_ts():
-    return 'FAKE TS\n'
-
 @route('/variant.json')
 def variant_json():
     return '''\
@@ -41,6 +37,7 @@ def variant_playlist():
 
 
 @route('/low.m3u8')
+@route('/live/low.m3u8')
 def low_playlist():
     response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
     return '''\
@@ -67,7 +64,45 @@ def high_playlist():
 #EXT-X-ENDLIST
 '''.format(server=M3U8_SERVER)
 
+@route('/crypto.m3u8')
+def crypto_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    return '''\
+#EXTM3U
+#EXT-X-MEDIA-SEQUENCE:82400
+#EXT-X-ALLOW-CACHE:NO
+#EXT-X-VERSION:2
+#EXT-X-KEY:METHOD=AES-128,URI="/key.bin", IV=0X10ef8f758ca555115584bb5b3c687f52
+#EXT-X-TARGETDURATION:200
+#EXTINF:100,
+{server}/high1.ts
+#EXTINF:100,
+{server}/high2.ts
+#EXT-X-ENDLIST
+'''.format(server=M3U8_SERVER)
 
-if __name__ == '__main__':    
+@route('/missing_chunks.m3u8')
+def missing_chunks_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    return '''\
+#EXTM3U
+#EXT-X-TARGETDURATION:200
+#EXTINF:100,
+{server}/missing1.ts
+#EXTINF:100,
+{server}/missing2.ts
+#EXT-X-ENDLIST
+'''.format(server=M3U8_SERVER)
+
+
+@route('/key.bin')
+def key():
+    return 'FAKE KEY\n'
+
+@route('/<:re:(high|low)(1|2)>.ts')
+def chunk():
+    return 'FAKE TS\n'
+
+if __name__ == '__main__':
     bottle.debug = True
     run(host='localhost', port=8845)

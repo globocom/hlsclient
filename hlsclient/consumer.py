@@ -5,7 +5,7 @@ from m3u8.model import Key
 from collections import namedtuple
 import errno
 import os
-import urllib
+import urllib2
 import urlparse
 
 MPEG_TS_HEADER = '474000'.decode('hex')
@@ -89,12 +89,12 @@ def download_to_file(uri, destination_path):
     "Retrives the file if it does not exist locally"
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
-        urllib.urlretrieve(url=uri, filename=filename)
+        request = urllib2.urlopen(url=uri)
+        with open(filename, 'wb') as f:
+            f.write(request.read())
         return filename
     return False
 
-# TODO: All methods below don't have unittests!
-#
 def random_key(key_name):
     class IV:
         def __init__(self, iv):
