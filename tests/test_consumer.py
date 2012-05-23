@@ -5,7 +5,7 @@ import m3u8
 from m3u8.model import Segment, Key
 
 import hlsclient.consumer
-from hlsclient.consumer import collect_resources_to_download
+from hlsclient.consumer import collect_resources_to_download, encrypt, decrypt, random_key
 from .fake_m3u8_server import M3U8_SERVER
 
 class BaseFakeM3U8(object):
@@ -218,3 +218,8 @@ def test_variant_m3u8_consumption(tmpdir):
     assert sorted(expected_downloaded) == sorted(resources_downloaded)
     for fname in expected_downloaded:
         assert M3U8_SERVER not in open(str(tmpdir.join(fname))).read()
+
+def test_consumer_should_be_able_to_encrypt_and_decrypt_content():
+    content = "blabla"
+    fake_key = random_key()
+    assert content == decrypt(encrypt(content, fake_key), fake_key)

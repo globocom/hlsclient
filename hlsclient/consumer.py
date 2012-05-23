@@ -39,13 +39,13 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False)
     downloaded_files = download_resources_to_files(resources, full_path)
 
     if downloaded_files:
-        if new_key:
-            # TODO: Key substitution is not tested!
-            save_new_key(new_key, destination_path)
-            change_segments_key(downloaded_files, playlist.key, random_key())
-            playlist.key = new_key
-            playlist.data['version'] = "2"
-
+#        if new_key:
+#            # TODO: Key substitution is not tested!
+#            save_new_key(new_key, destination_path)
+#            change_segments_key(downloaded_files, playlist.key, new_key)
+#            playlist.key = new_key
+#            playlist.data['version'] = "2"
+#
         playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path)
 
@@ -94,7 +94,7 @@ def download_to_file(uri, destination_path):
     return False
 
 # TODO: All methods below don't have unittests!
-
+#
 def random_key():
     class IV:
         def __init__(self, iv):
@@ -103,43 +103,22 @@ def random_key():
         def __str__(self):
             return '0X' + self.iv.encode('hex')
 
-    key = Key(method='AES-128', uri='/tmp/hls/mykey.bin', iv=IV(os.urandom(16)))
+    key = Key(method='AES-128', uri='mykey.bin', baseuri="/tmp/hls",  iv=IV(os.urandom(16)))
     key.key = os.urandom(16)
-    key.basepath = '/tmp/hls'
     return key
 
-def save_new_key(key, destination_path):
-    filename = os.path.join(destination_path, os.path.basename(key.uri))
-    if not os.path.exists(filename):
-        with open(filename, "w") as f:
-            f.write(key.key)
-
-def change_segments_key(paths, original_key, new_key):
-    for path in paths:
-        if path.endswith('.ts'): # TODO: refactor, get only segments
-            change_segment_key(path, original_key, new_key)
-
-def change_segment_key(path, original_key, new_key):
-    plain = get_plain_segment_content(path, original_key)
+def encrypt(data, key):
     encoder = PKCS7Encoder()
-    padded_text = encoder.encode(plain)
-    encryptor = AES.new(new_key.key, AES.MODE_CBC, new_key.iv.iv)
-    encrypted = encryptor.encrypt(padded_text)
-    with open(path, "w") as f:
-        f.write(encrypted)
-    assert plain == get_plain_segment_content(path, new_key)
+    padded_text = encoder.encode(data)
+    encryptor = AES.new(key.key, AES.MODE_CBC, key.iv.iv)
+    encrypted_data = encryptor.encrypt(padded_text)
 
-def get_plain_segment_content(segment_path, key):
-    with open(segment_path, "r") as f:
-        raw = f.read()
-    if key:
-        # This has not been tested even manually
-        with open(str(key.uri), "r") as f:
-            key_value = f.read()
-        iv = key.iv[2:].decode('hex') # Removes 0X prefix
-        decryptor = AES.new(key_value, AES.MODE_CBC, iv)
-        plain = decryptor.decrypt(raw)
-    else:
-        plain = raw
-    assert plain.startswith(MPEG_TS_HEADER)
-    return plain
+    return encrypted_data
+
+def decrypt(data, key):
+    encoder = PKCS7Encoder()
+    iv = str(key.iv)[2:].decode('hex') # Removes 0X prefix
+    decryptor = AES.new(key.key, AES.MODE_CBC, key.iv.iv)
+    plain = decryptor.decrypt(data)
+
+    return encoder.decode(plain)
