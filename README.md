@@ -1,7 +1,7 @@
 hls-client
 ==========
 
-This is a simple Python HTTP Live Streaming Client. It consumes a list of remote
+This is a simple Python [HTTP Live Streaming Client](https://developer.apple.com/resources/http-streaming/). It consumes a list of remote
 playlists, and saves all needed files to serve the playlist
 locally: the key, segments, and a modified `m3u8` with
 paths normalized.
