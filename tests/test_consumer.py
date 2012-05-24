@@ -90,9 +90,12 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
 
     plain = plain_dir.join('low1.ts').read()
     encrypted = encrypted_dir.join('low1.ts').read()
+    m3u8_contents = encrypted_dir.join('low.m3u8').read()
 
     assert plain == decrypt(encrypted, fake_key)
     assert encrypted_dir.join("fake_key.bin").check()
+    assert str(fake_key) in m3u8_contents
+    assert "#EXT-X-VERSION:2" in m3u8_contents
 
 def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
     m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
@@ -107,8 +110,10 @@ def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
 
     plain = plain_dir.join('encrypted1.ts').read()
     encrypted = encrypted_dir.join('encrypted2.ts').read()
+    m3u8_contents = plain_dir.join('crypto.m3u8').read()
 
     assert plain == decrypt(encrypted, playlist.key)
+    assert "#EXT-X-KEY" not in m3u8_contents
 
 def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
@@ -124,6 +129,8 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
 
     original = original_dir.join('encrypted1.ts').read()
     new = new_dir.join('encrypted2.ts').read()
+    m3u8_contents = new_dir.join('crypto.m3u8').read()
 
     assert decrypt(original, playlist.key) == decrypt(new, new_key)
     assert new_dir.join("new_key.bin").check()
+    assert str(new_key) in m3u8_contents

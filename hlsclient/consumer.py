@@ -17,6 +17,9 @@ def consume(m3u8_uri, destination_path, new_key=False):
     Given a ``m3u8_uri``, downloads all files to disk
     The remote path structure is maintained under ``destination_path``
 
+    - new_key:
+        If False, keeps existing encryption
+        If None, decrypts file
     '''
     playlist = m3u8.load(m3u8_uri)
 
@@ -41,9 +44,7 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False)
     m3u8_has_changed = downloaded_key or any(downloaded_segments)
     if m3u8_has_changed:
         playlist.basepath = build_intermediate_path(m3u8_uri)
-        save_m3u8(playlist, m3u8_uri, full_path)
-        if new_key:
-            save_new_key(new_key, full_path)
+        save_m3u8(playlist, m3u8_uri, full_path, new_key)
 
     return m3u8_has_changed
 
@@ -75,7 +76,12 @@ def download_segments(playlist, destination_path, new_key):
     segments = [segment.absolute_uri for segment in playlist.segments]
     return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
 
-def save_m3u8(playlist, m3u8_uri, full_path):
+def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
+    if new_key:
+        save_new_key(new_key, full_path)
+        playlist.version = "2"
+    if new_key is not False:
+        playlist.key = new_key
     playlist.basepath = build_intermediate_path(m3u8_uri)
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
@@ -90,9 +96,6 @@ def download_to_file(uri, destination_path, old_key=None, new_key=False):
     '''
     Retrives the file if it does not exist locally and changes the encryption if needed.
 
-    - new_key:
-        If False, keeps existing encryption
-        If None, decrypts file
     '''
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
