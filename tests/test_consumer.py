@@ -5,199 +5,56 @@ import m3u8
 from m3u8.model import Segment, Key
 
 import hlsclient.consumer
-from hlsclient.consumer import collect_resources_to_download
+from hlsclient.consumer import encrypt, decrypt, random_key, save_new_key
 from .fake_m3u8_server import M3U8_SERVER
 
-class BaseFakeM3U8(object):
-    _m3u8_saved_path = None
-    is_variant = False
+def test_consumer_should_download_key_file(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/crypto.m3u8', str(tmpdir))
+    assert tmpdir.join('/key.bin') in tmpdir.listdir()
 
-    @property
-    def key(self):
-        return None
+def test_consumer_should_download_segments_and_save_on_the_correct_path(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir))
+    assert tmpdir.join('/low1.ts') in tmpdir.listdir()
+    assert tmpdir.join('/low2.ts') in tmpdir.listdir()
 
-    @property
-    def segments(self):
-        return []
+def test_consumer_should_return_false_if_there_is_no_new_file(tmpdir):
+    assert True == bool(hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir)))
+    assert False == bool(hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir)))
 
-    def dump(self, path):
-        self._m3u8_saved_path = path
+def test_consumer_should_do_nothing_if_file_already_exists(tmpdir):
+    # We we try to get these chunks from the server, it will fail
+    # since they don't exist. Since we create fake ones, hlsclient
+    # will not try to download them.
+    tmpdir.join('/missing1.ts').write('CHUNK')
+    tmpdir.join('/missing2.ts').write('CHUNK')
+    assert False == bool(hlsclient.consumer.consume(M3U8_SERVER + '/missing_chunks.m3u8', str(tmpdir)))
 
-def test_if_consume_loads_path(monkeypatch, tmpdir):
-    called_args = []
-    def fake_load(url):
-        called_args.append(url)
-        return BaseFakeM3U8()
-
-    monkeypatch.setattr(m3u8, 'load', fake_load)
-    hlsclient.consumer.consume('m3u8', str(tmpdir.join('local_path')))
-    assert ['m3u8'] == called_args
-
-def test_if_consume_downloads_key_file(monkeypatch, tmpdir):
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def key(self):
-            return Key(method='AES', uri='/key', baseuri='http://example.com')
-    monkeypatch.setattr(m3u8, 'load', lambda _: FakeM3U8())
-
-    called_args = []
-    def fake_download_to_file(uri, local_path):
-        assert 'http://example.com/key' == uri
-        called_args.append(uri)
-        return True
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
-        fake_download_to_file)
-    assert hlsclient.consumer.consume('m3u8', str(tmpdir.join('local_path')))
-    assert 1 == len(called_args)
-
-def test_if_consume_downloads_segments_and_saves_on_the_correct_path(monkeypatch, tmpdir):
-    REMOTE_CHUNKS = ['http://server/another/remote/location/chunk1.ts',
-                     'http://server/another/remote/location/chunk2.ts']
-
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def segments(self):
-            return [Segment(uri=uri, baseuri='http://exaple.com') for uri in REMOTE_CHUNKS]
-    monkeypatch.setattr(m3u8, 'load', lambda _: FakeM3U8())
-
-    called_args = []
-    def fake_download_to_file(uri, local_path):
-        assert local_path == str(tmpdir.join('local_path', 'remote', 'path'))
-        called_args.append(uri)
-        return True
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
-        fake_download_to_file)
-
-    assert hlsclient.consumer.consume('http://server/remote/path/m3u8', str(tmpdir.join('local_path')))
-    assert REMOTE_CHUNKS == called_args
-
-def test_if_consume_returns_false_if_there_is_no_new_file(monkeypatch, tmpdir):
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def segments(self):
-            return [Segment(uri='/path1', baseuri='http://exaple.com'),
-                    Segment(uri='/path2', baseuri='http://exaple.com')]
-    monkeypatch.setattr(m3u8, 'load', lambda _: FakeM3U8())
-
-    def fake_download_to_file(uri, local_path):
-        return False
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file',
-        fake_download_to_file)
-    assert not hlsclient.consumer.consume('m3u8', str(tmpdir.join('local_path')))
-
-def test_if_download_to_file_saves_the_file_with_correct_path(monkeypatch):
-    called_args = []
-    def fake_urlretrieve(url, filename):
-        called_args.append([url, filename])
-    monkeypatch.setattr(urllib, 'urlretrieve', fake_urlretrieve)
-
-    SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
-    hlsclient.consumer.download_to_file(SEGMENT_URI, '/tmp/')
-    assert 1 == len(called_args)
-    assert SEGMENT_URI == called_args[0][0]
-    assert '/tmp/chunk.ts' == called_args[0][1]
-
-def test_if_download_to_file_does_nothing_if_file_already_exists(monkeypatch):
-    called_args = []
-    def fake_urlretrieve(url, filename):
-        called_args.append([url, filename])
-    monkeypatch.setattr(urllib, 'urlretrieve', fake_urlretrieve)
-
-    def fake_exists(path):
-        return True
-    monkeypatch.setattr(os.path, 'exists', fake_exists)
-
-    SEGMENT_URI = 'http://example.com/path/subpath/chunk.ts'
-    hlsclient.consumer.download_to_file(SEGMENT_URI, '/tmp/')
-    assert 0 == len(called_args)
-
-def test_if_download_to_file_creates_intermediate_directories(monkeypatch, tmpdir):
-    monkeypatch.setattr(m3u8, 'load', lambda _: BaseFakeM3U8())
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file', lambda *args: True)
-
-    destination_path = tmpdir.join('subdir1', 'subdir2')
-    hlsclient.consumer.consume('http://server.com/live/stream.m3u8', str(destination_path))
-
-    expected_path = destination_path.join('live')
-
+def test_consumer_should_create_intermediate_directories(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir))
+    expected_path = tmpdir.join('live')
     assert expected_path.check()
 
-def test_if_consume_saves_m3u8_file_if_new_segment_saved(monkeypatch, tmpdir):
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def segments(self):
-            return [Segment(uri='/path1', baseuri='http://exaple.com'),
-                    Segment(uri='/path2', baseuri='http://exaple.com')]
+def test_consumer_should_save_m3u8_file(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir))
+    assert tmpdir.join('low.m3u8') in tmpdir.listdir()
 
-    fake_m3u8 = FakeM3U8()
+def test_consumer_does_not_save_m3u8_file_if_there_is_no_new_segments(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir))
+    tmpdir.join('low.m3u8').write('MODIFIED PLAYLIST')
+    assert False == bool(hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir)))
+    assert 'MODIFIED PLAYLIST' == tmpdir.join('low.m3u8').read()
 
-    monkeypatch.setattr(m3u8, 'load', lambda _: fake_m3u8)
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file', lambda *args: True)
+def test_if_m3u8_is_generated_with_basepath(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir))
+    expected_path = tmpdir.join('live').join('low.m3u8')
+    assert expected_path.check()
 
-    hlsclient.consumer.consume('http://server/remote/path/file.m3u8', str(tmpdir.join('local_path')))
-    # ignore existing
-    hlsclient.consumer.consume('http://server/remote/path/file.m3u8', str(tmpdir.join('local_path')))
-
-    local_path = tmpdir.join('local_path', 'remote', 'path')
-    assert local_path.join('file.m3u8') == fake_m3u8._m3u8_saved_path
-
-def test_if_consume_does_not_save_m3u8_file_if_no_segment_saved(monkeypatch, tmpdir):
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def segments(self):
-            return [Segment(uri='/path1', baseuri='http://exaple.com'),
-                    Segment(uri='/path2', baseuri='http://exaple.com')]
-
-    fake_m3u8 = FakeM3U8()
-
-    monkeypatch.setattr(m3u8, 'load', lambda _: fake_m3u8)
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file', lambda *args: False)
-
-    hlsclient.consumer.consume('m3u8', str(tmpdir.join('local_path')))
-
-    assert not fake_m3u8._m3u8_saved_path
-
-def test_if_m3u8_is_generated_with_basepath(monkeypatch, tmpdir):
-    M3U8_PATH = '/remote/path'
-    M3U8_URI = 'http://server.com' + M3U8_PATH + '/file.m3u8'
-    class FakeM3U8(BaseFakeM3U8):
-        @property
-        def segments(self):
-            return [Segment(uri='/path1', baseuri='http://exaple.com'),
-                    Segment(uri='/path2', baseuri='http://exaple.com')]
-
-    fake_m3u8 = FakeM3U8()
-    monkeypatch.setattr(m3u8, 'load', lambda _: fake_m3u8)
-    monkeypatch.setattr(hlsclient.consumer, 'download_to_file', lambda *args: True)
-    hlsclient.consumer.consume(M3U8_URI, str(tmpdir.join('local_path')))
-
-    assert M3U8_PATH == fake_m3u8.basepath
-
-def test_consume_playlist_with_relative_paths():
-    playlist = m3u8.M3U8('''\
-#EXTM3U
-#EXT-X-TARGETDURATION:400
-#EXT-X-KEY:METHOD=AES-128,URI="../key.bin", IV=0X10ef8f758ca555115584bb5b3c687f52
-#EXTINF:100,
-/chunk1.ts
-#EXTINF:100,
-../chunk2.ts
-#EXTINF:100,
-../../chunk3.ts
-#EXTINF:100,
-chunk4.ts
-#EXT-X-ENDLIST
-''', baseuri='http://example.com/path/to/')
-    expected_resources = [
-        'http://example.com/path/key.bin',
-        'http://example.com/path/to/chunk1.ts',
-        'http://example.com/path/chunk2.ts',
-        'http://example.com/chunk3.ts',
-        'http://example.com/path/to/chunk4.ts',
-    ]
-    assert expected_resources == collect_resources_to_download(playlist)
-
-
+def test_consumer_should_save_segments_with_basepath(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir))
+    m3u8_content = tmpdir.join('live').join('low.m3u8').read()
+    expected_path = tmpdir.join('live').join('low1.ts')
+    assert expected_path.check()
+    assert "/live/low1.ts" in m3u8_content
 
 def test_variant_m3u8_consumption(tmpdir):
     expected_downloaded = [
@@ -218,3 +75,80 @@ def test_variant_m3u8_consumption(tmpdir):
     assert sorted(expected_downloaded) == sorted(resources_downloaded)
     for fname in expected_downloaded:
         assert M3U8_SERVER not in open(str(tmpdir.join(fname))).read()
+
+def test_consumer_should_be_able_to_encrypt_and_decrypt_content():
+    content = "blabla"
+    fake_key = random_key("fake_key.bin")
+    assert content == decrypt(encrypt(content, fake_key), fake_key)
+
+def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
+    fake_key = random_key("fake_key.bin")
+    save_new_key(fake_key, str(tmpdir))
+
+    assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
+
+def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
+    plain_dir = tmpdir.join('plain')
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
+
+    fake_key = random_key("fake_key.bin")
+    encrypted_dir = tmpdir.join('encrypted')
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), fake_key)
+
+    plain = plain_dir.join('low1.ts').read()
+    encrypted = encrypted_dir.join('low1.ts').read()
+    m3u8_content = encrypted_dir.join('low.m3u8').read()
+
+    assert plain == decrypt(encrypted, fake_key)
+    assert encrypted_dir.join("fake_key.bin").check()
+    assert str(fake_key) in m3u8_content
+    assert 'URI="fake_key.bin"' in str(fake_key)
+    assert "#EXT-X-VERSION:2" in m3u8_content
+
+def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
+    m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
+    playlist = m3u8.load(m3u8_uri)
+
+    encrypted_dir = tmpdir.join('encrypted')
+    hlsclient.consumer.consume(m3u8_uri, str(encrypted_dir))
+    playlist.key.key_value = encrypted_dir.join('key.bin').read()
+
+    plain_dir = tmpdir.join('plain')
+    hlsclient.consumer.consume(m3u8_uri, str(plain_dir), None)
+
+    plain = plain_dir.join('encrypted1.ts').read()
+    encrypted = encrypted_dir.join('encrypted2.ts').read()
+    m3u8_content = plain_dir.join('crypto.m3u8').read()
+
+    assert plain == decrypt(encrypted, playlist.key)
+    assert "#EXT-X-KEY" not in m3u8_content
+
+def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
+    m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
+    playlist = m3u8.load(m3u8_uri)
+
+    original_dir = tmpdir.join('original')
+    hlsclient.consumer.consume(m3u8_uri, str(original_dir))
+    playlist.key.key_value = original_dir.join('key.bin').read()
+
+    new_dir = tmpdir.join('new')
+    new_key = random_key("new_key.bin")
+    hlsclient.consumer.consume(m3u8_uri, str(new_dir), new_key)
+
+    original = original_dir.join('encrypted1.ts').read()
+    new = new_dir.join('encrypted2.ts').read()
+    m3u8_content = new_dir.join('crypto.m3u8').read()
+
+    assert decrypt(original, playlist.key) == decrypt(new, new_key)
+    assert new_dir.join("new_key.bin").check()
+    assert str(new_key) in m3u8_content
+
+def test_consumer_should_save_key_on_basepath(tmpdir):
+    fake_key = random_key("fake_key.bin")
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), fake_key)
+
+    m3u8_content = tmpdir.join('live').join('low.m3u8').read()
+
+    assert tmpdir.join('live').join('fake_key.bin').check()
+    assert str(fake_key) in m3u8_content
+    assert 'URI="fake_key.bin"' in str(fake_key)

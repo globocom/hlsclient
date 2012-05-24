@@ -2,10 +2,11 @@ import ConfigParser
 import logging
 import time
 import os
+from urllib2 import HTTPError
 
 from balancer import Balancer
 from discover import PlaylistDiscover
-from consumer import consume
+from consumer import consume, random_key
 
 def load_config(path=None):
     if path is None:
@@ -26,6 +27,7 @@ def main():
     logger.debug('Config loaded')
 
     balancer = Balancer()
+    key = random_key("newkey.bin")
 
     while True:
         d = PlaylistDiscover(config)
@@ -40,8 +42,8 @@ def main():
             resource_path = str(resource)
             logger.debug('Consuming %s' % resource_path)
             try:
-                modified = consume(resource_path, destination)
-            except (IOError, OSError) as err:
+                modified = consume(resource_path, destination, key)
+            except (HTTPError, IOError, OSError) as err:
                 logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
                 balancer.notify_error(resource.server, resource.path)
             else:

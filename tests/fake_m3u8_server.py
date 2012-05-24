@@ -13,10 +13,6 @@ VARIANT_PLAYLIST = '''\
 '''.format(server=M3U8_SERVER)
 
 
-@route('/<:re:.*>.ts')
-def all_ts():
-    return 'FAKE TS\n'
-
 @route('/variant.json')
 def variant_json():
     return '''\
@@ -41,6 +37,7 @@ def variant_playlist():
 
 
 @route('/low.m3u8')
+@route('/live/low.m3u8')
 def low_playlist():
     response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
     return '''\
@@ -67,7 +64,60 @@ def high_playlist():
 #EXT-X-ENDLIST
 '''.format(server=M3U8_SERVER)
 
+@route('/crypto.m3u8')
+def crypto_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    return '''\
+#EXTM3U
+#EXT-X-MEDIA-SEQUENCE:82400
+#EXT-X-ALLOW-CACHE:NO
+#EXT-X-VERSION:2
+#EXT-X-KEY:METHOD=AES-128,URI="/key.bin", IV=0X10ef8f758ca555115584bb5b3c687f52
+#EXT-X-TARGETDURATION:200
+#EXTINF:100,
+{server}/encrypted1.ts
+#EXTINF:100,
+{server}/encrypted2.ts
+#EXT-X-ENDLIST
+'''.format(server=M3U8_SERVER)
 
-if __name__ == '__main__':    
+@route('/missing_chunks.m3u8')
+def missing_chunks_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    return '''\
+#EXTM3U
+#EXT-X-TARGETDURATION:200
+#EXTINF:100,
+{server}/missing1.ts
+#EXTINF:100,
+{server}/missing2.ts
+#EXT-X-ENDLIST
+'''.format(server=M3U8_SERVER)
+
+
+@route('/key.bin')
+def key():
+    return '0123456789abcdef'
+
+@route('/<:re:(high|low)(1|2)>.ts')
+def chunk():
+    return 'FAKE TS\n'
+
+@route('/encrypted<:re:(1|2)>.ts')
+def chunk():
+    '''
+    The chunk was generated in the following way:
+
+    >>> from hlsclient.consumer import encrypt
+    >>> from m3u8 import load
+    >>> playlist = load("http://localhost:8845/crypto.m3u8")
+    >>> playlist.key.key_value = '0123456789abcdef'
+    >>> encrypt("FAKE TS", playlist.key)
+    '\xc8\xff\x05\xa4\xda@\xf9\xb7wL~!\xca\x00@N'
+
+    '''
+    return '\xc8\xff\x05\xa4\xda@\xf9\xb7wL~!\xca\x00@N'
+
+if __name__ == '__main__':
     bottle.debug = True
     run(host='localhost', port=8845)
