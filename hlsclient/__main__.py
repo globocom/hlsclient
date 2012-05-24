@@ -2,6 +2,7 @@ import ConfigParser
 import logging
 import time
 import os
+from urllib2 import HTTPError
 
 from balancer import Balancer
 from discover import PlaylistDiscover
@@ -42,7 +43,7 @@ def main():
             logger.debug('Consuming %s' % resource_path)
             try:
                 modified = consume(resource_path, destination, key)
-            except () as err: #(IOError, OSError) as err:
+            except (HTTPError, IOError, OSError) as err:
                 logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
                 balancer.notify_error(resource.server, resource.path)
             else:
