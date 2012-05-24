@@ -1,6 +1,7 @@
 import ConfigParser
 import logging
 import time
+import hashlib
 import os
 from urllib2 import HTTPError
 
@@ -27,7 +28,7 @@ def main():
     logger.debug('Config loaded')
 
     balancer = Balancer()
-    key = random_key("newkey.bin")
+    keys = {}
 
     while True:
         d = PlaylistDiscover(config)
@@ -41,8 +42,10 @@ def main():
         for resource in balancer.actives:
             resource_path = str(resource)
             logger.debug('Consuming %s' % resource_path)
+            if resource not in keys:
+                keys[resource] = random_key("key_%s.bin" % hashlib.md5(resource_path).hexdigest())
             try:
-                modified = consume(resource_path, destination, key)
+                modified = consume(resource_path, destination, keys[resource])
             except (HTTPError, IOError, OSError) as err:
                 logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
                 balancer.notify_error(resource.server, resource.path)
