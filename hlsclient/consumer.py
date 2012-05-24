@@ -39,11 +39,10 @@ def consume_variant_playlist(playlist, m3u8_uri, destination_path):
 def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False):
     full_path = build_full_path(destination_path, m3u8_uri)
     downloaded_key = download_key(playlist, destination_path)
-    downloaded_segments = download_segments(playlist, destination_path, new_key)
+    downloaded_segments = download_segments(playlist, full_path, new_key)
 
     m3u8_has_changed = downloaded_key or any(downloaded_segments)
     if m3u8_has_changed:
-        playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path, new_key)
 
     return m3u8_has_changed
@@ -77,17 +76,18 @@ def download_segments(playlist, destination_path, new_key):
     return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
+    playlist.basepath = build_intermediate_path(m3u8_uri)
     if new_key:
         save_new_key(new_key, full_path)
         playlist.version = "2"
-    if new_key is not False:
         playlist.key = new_key
-    playlist.basepath = build_intermediate_path(m3u8_uri)
+    elif new_key is None:
+        playlist.key = None
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
 
-def save_new_key(new_key, full_path):
-    filename = os.path.join(full_path, os.path.basename(new_key.uri))
+def save_new_key(new_key, destination_path):
+    filename = os.path.join(destination_path, os.path.basename(new_key.uri))
     if not os.path.exists(filename):
         with open(filename, 'wb') as f:
             f.write(new_key.key_value)
@@ -117,15 +117,9 @@ def random_key(key_name):
         def __str__(self):
             return '0X' + self.iv.encode('hex')
 
-    key = Key(method='AES-128', uri=key_name, baseuri="/tmp/hls",  iv=IV(os.urandom(16)))
+    key = Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16)))
     key.key_value = os.urandom(16)
     return key
-
-def save_new_key(key, destination_path):
-    filename = os.path.join(destination_path, os.path.basename(key.uri))
-    if not os.path.exists(filename):
-        with open(filename, "w") as f:
-            f.write(key.key_value)
 
 def get_key_iv(key):
     iv = str(key.iv)[2:] # Removes 0X prefix

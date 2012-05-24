@@ -49,6 +49,13 @@ def test_if_m3u8_is_generated_with_basepath(tmpdir):
     expected_path = tmpdir.join('live').join('low.m3u8')
     assert expected_path.check()
 
+def test_consumer_should_save_segments_with_basepath(tmpdir):
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir))
+    m3u8_content = tmpdir.join('live').join('low.m3u8').read()
+    expected_path = tmpdir.join('live').join('low1.ts')
+    assert expected_path.check()
+    assert "/live/low1.ts" in m3u8_content
+
 def test_variant_m3u8_consumption(tmpdir):
     expected_downloaded = [
         'variant-playlist.m3u8',
@@ -95,6 +102,7 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     assert plain == decrypt(encrypted, fake_key)
     assert encrypted_dir.join("fake_key.bin").check()
     assert str(fake_key) in m3u8_contents
+    assert 'URI="fake_key.bin"' in str(fake_key)
     assert "#EXT-X-VERSION:2" in m3u8_contents
 
 def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
@@ -134,3 +142,13 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     assert decrypt(original, playlist.key) == decrypt(new, new_key)
     assert new_dir.join("new_key.bin").check()
     assert str(new_key) in m3u8_contents
+
+def test_consumer_should_save_key_on_basepath(tmpdir):
+    fake_key = random_key("fake_key.bin")
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), fake_key)
+
+    m3u8_contents = tmpdir.join('live').join('low.m3u8').read()
+
+    assert tmpdir.join('live').join('fake_key.bin').check()
+    assert str(fake_key) in m3u8_contents
+    assert 'URI="fake_key.bin"' in str(fake_key)
