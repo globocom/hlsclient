@@ -64,7 +64,9 @@ def ensure_directory_exists(directory):
 
 def download_key(playlist, destination_path):
     if playlist.key:
-        return download_to_file(playlist.key.absolute_uri, destination_path)
+        filename = download_to_file(playlist.key.absolute_uri, destination_path)
+        with open(filename, 'rb') as f:
+            playlist.key.key_value = f.read()
     return False
 
 def download_segments(playlist, destination_path, new_key):
@@ -76,18 +78,21 @@ def save_m3u8(playlist, m3u8_uri, full_path):
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
 
-def download_to_file(uri, destination_path, old_key=None, new_key=None):
+def download_to_file(uri, destination_path, old_key=None, new_key=False):
     '''
     Retrives the file if it does not exist locally and changes the encryption if needed.
 
+    - new_key:
+        If False, keeps existing encryption
+        If None, decrypts file
     '''
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
         request = urllib2.urlopen(url=uri)
         raw = request.read()
-        if new_key:
+        if new_key is not False:
             plain = decrypt(raw, old_key) if old_key else raw
-            raw = encrypt(plain, new_key)
+            raw = encrypt(plain, new_key) if new_key else plain
         with open(filename, 'wb') as f:
             f.write(raw)
         return filename
@@ -102,27 +107,30 @@ def random_key(key_name):
             return '0X' + self.iv.encode('hex')
 
     key = Key(method='AES-128', uri=key_name, baseuri="/tmp/hls",  iv=IV(os.urandom(16)))
-    key.key = os.urandom(16)
+    key.key_value = os.urandom(16)
     return key
 
 def save_new_key(key, destination_path):
     filename = os.path.join(destination_path, os.path.basename(key.uri))
     if not os.path.exists(filename):
         with open(filename, "w") as f:
-            f.write(key.key)
+            f.write(key.key_value)
+
+def get_key_iv(key):
+    iv = str(key.iv)[2:] # Removes 0X prefix
+    return iv.decode('hex')
 
 def encrypt(data, key):
     encoder = PKCS7Encoder()
     padded_text = encoder.encode(data)
-    encryptor = AES.new(key.key, AES.MODE_CBC, key.iv.iv)
+    encryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
     encrypted_data = encryptor.encrypt(padded_text)
 
     return encrypted_data
 
 def decrypt(data, key):
     encoder = PKCS7Encoder()
-    iv = str(key.iv)[2:].decode('hex') # Removes 0X prefix
-    decryptor = AES.new(key.key, AES.MODE_CBC, key.iv.iv)
+    decryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
     plain = decryptor.decrypt(data)
 
     return encoder.decode(plain)

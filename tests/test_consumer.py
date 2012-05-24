@@ -92,3 +92,19 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     encrypted = encrypted_dir.join('low1.ts').read()
 
     assert plain == decrypt(encrypted, fake_key)
+
+def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
+    m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
+    playlist = m3u8.load(m3u8_uri)
+
+    encrypted_dir = tmpdir.join('encrypted')
+    hlsclient.consumer.consume(m3u8_uri, str(encrypted_dir))
+
+    plain_dir = tmpdir.join('plain')
+    hlsclient.consumer.consume(m3u8_uri, str(plain_dir), None)
+
+    plain = plain_dir.join('encrypted1.ts').read()
+    encrypted = encrypted_dir.join('encrypted2.ts').read()
+    playlist.key.key_value = encrypted_dir.join('key.bin').read()
+
+    assert plain == decrypt(encrypted, playlist.key)

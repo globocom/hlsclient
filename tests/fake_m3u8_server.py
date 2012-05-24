@@ -75,9 +75,9 @@ def crypto_playlist():
 #EXT-X-KEY:METHOD=AES-128,URI="/key.bin", IV=0X10ef8f758ca555115584bb5b3c687f52
 #EXT-X-TARGETDURATION:200
 #EXTINF:100,
-{server}/high1.ts
+{server}/encrypted1.ts
 #EXTINF:100,
-{server}/high2.ts
+{server}/encrypted2.ts
 #EXT-X-ENDLIST
 '''.format(server=M3U8_SERVER)
 
@@ -97,11 +97,26 @@ def missing_chunks_playlist():
 
 @route('/key.bin')
 def key():
-    return 'FAKE KEY\n'
+    return '0123456789abcdef'
 
 @route('/<:re:(high|low)(1|2)>.ts')
 def chunk():
     return 'FAKE TS\n'
+
+@route('/encrypted<:re:(1|2)>.ts')
+def chunk():
+    '''
+    The chunk was generated in the following way:
+
+    >>> from hlsclient.consumer import encrypt
+    >>> from m3u8 import load
+    >>> playlist = load("http://localhost:8845/crypto.m3u8")
+    >>> playlist.key.key_value = '0123456789abcdef'
+    >>> encrypt("FAKE TS", playlist.key)
+    '\xc8\xff\x05\xa4\xda@\xf9\xb7wL~!\xca\x00@N'
+
+    '''
+    return '\xc8\xff\x05\xa4\xda@\xf9\xb7wL~!\xca\x00@N'
 
 if __name__ == '__main__':
     bottle.debug = True
