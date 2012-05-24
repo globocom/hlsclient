@@ -92,6 +92,7 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     encrypted = encrypted_dir.join('low1.ts').read()
 
     assert plain == decrypt(encrypted, fake_key)
+    assert encrypted_dir.join("fake_key.bin").check()
 
 def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
     m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
@@ -125,3 +126,4 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     new = new_dir.join('encrypted2.ts').read()
 
     assert decrypt(original, playlist.key) == decrypt(new, new_key)
+    assert new_dir.join("new_key.bin").check()

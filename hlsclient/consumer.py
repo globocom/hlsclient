@@ -42,6 +42,8 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False)
     if m3u8_has_changed:
         playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path)
+        if new_key:
+            save_new_key(new_key, full_path)
 
     return m3u8_has_changed
 
@@ -77,6 +79,12 @@ def save_m3u8(playlist, m3u8_uri, full_path):
     playlist.basepath = build_intermediate_path(m3u8_uri)
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
+
+def save_new_key(new_key, full_path):
+    filename = os.path.join(full_path, os.path.basename(new_key.uri))
+    if not os.path.exists(filename):
+        with open(filename, 'wb') as f:
+            f.write(new_key.key_value)
 
 def download_to_file(uri, destination_path, old_key=None, new_key=False):
     '''
