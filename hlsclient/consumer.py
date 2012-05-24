@@ -1,14 +1,10 @@
 from Crypto.Cipher import AES
 from pkcs7 import PKCS7Encoder
-from m3u8.model import Key
 
-from collections import namedtuple
 import errno
 import os
 import urllib2
 import urlparse
-
-MPEG_TS_HEADER = '474000'.decode('hex')
 
 import m3u8
 
@@ -117,7 +113,7 @@ def random_key(key_name):
         def __str__(self):
             return '0X' + self.iv.encode('hex')
 
-    key = Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16)))
+    key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16)))
     key.key_value = os.urandom(16)
     return key
 
