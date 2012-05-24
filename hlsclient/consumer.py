@@ -26,10 +26,9 @@ def consume(m3u8_uri, destination_path, new_key=False):
 
 def consume_variant_playlist(playlist, m3u8_uri, destination_path):
     full_path = build_full_path(destination_path, m3u8_uri)
-    save_m3u8(playlist, m3u8_uri, full_path)
-
     for p in playlist.playlists:
         consume(p.absolute_uri, destination_path)
+    save_m3u8(playlist, m3u8_uri, full_path)
     return True
 
 def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False):
