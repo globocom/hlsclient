@@ -99,12 +99,29 @@ def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
 
     encrypted_dir = tmpdir.join('encrypted')
     hlsclient.consumer.consume(m3u8_uri, str(encrypted_dir))
+    playlist.key.key_value = encrypted_dir.join('key.bin').read()
 
     plain_dir = tmpdir.join('plain')
     hlsclient.consumer.consume(m3u8_uri, str(plain_dir), None)
 
     plain = plain_dir.join('encrypted1.ts').read()
     encrypted = encrypted_dir.join('encrypted2.ts').read()
-    playlist.key.key_value = encrypted_dir.join('key.bin').read()
 
     assert plain == decrypt(encrypted, playlist.key)
+
+def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
+    m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
+    playlist = m3u8.load(m3u8_uri)
+
+    original_dir = tmpdir.join('original')
+    hlsclient.consumer.consume(m3u8_uri, str(original_dir))
+    playlist.key.key_value = original_dir.join('key.bin').read()
+
+    new_dir = tmpdir.join('new')
+    new_key = random_key("new_key.bin")
+    hlsclient.consumer.consume(m3u8_uri, str(new_dir), new_key)
+
+    original = original_dir.join('encrypted1.ts').read()
+    new = new_dir.join('encrypted2.ts').read()
+
+    assert decrypt(original, playlist.key) == decrypt(new, new_key)
