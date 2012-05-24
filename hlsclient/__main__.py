@@ -27,7 +27,7 @@ def main():
     logger.debug('Config loaded')
 
     balancer = Balancer()
-    key = random_key()
+    key = random_key("newkey.bin")
 
     while True:
         d = PlaylistDiscover(config)
