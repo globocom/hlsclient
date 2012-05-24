@@ -5,7 +5,7 @@ import m3u8
 from m3u8.model import Segment, Key
 
 import hlsclient.consumer
-from hlsclient.consumer import collect_resources_to_download, encrypt, decrypt, random_key, save_new_key
+from hlsclient.consumer import encrypt, decrypt, random_key, save_new_key
 from .fake_m3u8_server import M3U8_SERVER
 
 def test_consumer_should_download_key_file(tmpdir):
@@ -49,32 +49,6 @@ def test_if_m3u8_is_generated_with_basepath(tmpdir):
     expected_path = tmpdir.join('live').join('low.m3u8')
     assert expected_path.check()
 
-def test_consume_playlist_with_relative_paths():
-    playlist = m3u8.M3U8('''\
-#EXTM3U
-#EXT-X-TARGETDURATION:400
-#EXT-X-KEY:METHOD=AES-128,URI="../key.bin", IV=0X10ef8f758ca555115584bb5b3c687f52
-#EXTINF:100,
-/chunk1.ts
-#EXTINF:100,
-../chunk2.ts
-#EXTINF:100,
-../../chunk3.ts
-#EXTINF:100,
-chunk4.ts
-#EXT-X-ENDLIST
-''', baseuri='http://example.com/path/to/')
-    expected_resources = [
-        'http://example.com/path/key.bin',
-        'http://example.com/path/to/chunk1.ts',
-        'http://example.com/path/chunk2.ts',
-        'http://example.com/chunk3.ts',
-        'http://example.com/path/to/chunk4.ts',
-    ]
-    assert expected_resources == collect_resources_to_download(playlist)
-
-
-
 def test_variant_m3u8_consumption(tmpdir):
     expected_downloaded = [
         'variant-playlist.m3u8',
@@ -106,3 +80,15 @@ def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
 
+def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
+    plain_dir = tmpdir.join('plain')
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
+
+    fake_key = random_key("fake_key.bin")
+    encrypted_dir = tmpdir.join('encrypted')
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), fake_key)
+
+    plain = plain_dir.join('low1.ts').read()
+    encrypted = encrypted_dir.join('low1.ts').read()
+
+    assert plain == decrypt(encrypted, fake_key)

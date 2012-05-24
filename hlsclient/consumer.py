@@ -35,21 +35,15 @@ def consume_variant_playlist(playlist, m3u8_uri, destination_path):
 
 def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False):
     full_path = build_full_path(destination_path, m3u8_uri)
-    resources = collect_resources_to_download(playlist)
-    downloaded_files = download_resources_to_files(resources, full_path)
+    downloaded_key = download_key(playlist, destination_path)
+    downloaded_segments = download_segments(playlist, destination_path, new_key)
 
-    if downloaded_files:
-#        if new_key:
-#            # TODO: Key substitution is not tested!
-#            save_new_key(new_key, destination_path)
-#            change_segments_key(downloaded_files, playlist.key, new_key)
-#            playlist.key = new_key
-#            playlist.data['version'] = "2"
-#
+    m3u8_has_changed = downloaded_key or any(downloaded_segments)
+    if m3u8_has_changed:
         playlist.basepath = build_intermediate_path(m3u8_uri)
         save_m3u8(playlist, m3u8_uri, full_path)
 
-    return downloaded_files
+    return m3u8_has_changed
 
 def build_intermediate_path(m3u8_uri):
     url_path = urlparse.urlparse(m3u8_uri).path
@@ -68,30 +62,34 @@ def ensure_directory_exists(directory):
         if error.errno != errno.EEXIST:
             raise
 
-def collect_resources_to_download(playlist):
-    resources = []
-
+def download_key(playlist, destination_path):
     if playlist.key:
-        resources.append(playlist.key.absolute_uri)
-    resources.extend([segment.absolute_uri for segment in playlist.segments])
-    return resources
+        return download_to_file(playlist.key.absolute_uri, destination_path)
+    return False
 
-def download_resources_to_files(resources, destination_path):
-    downloaded_paths = map(lambda r: download_to_file(r, destination_path), resources)
-    return filter(None, downloaded_paths)
+def download_segments(playlist, destination_path, new_key):
+    segments = [segment.absolute_uri for segment in playlist.segments]
+    return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
 
 def save_m3u8(playlist, m3u8_uri, full_path):
     playlist.basepath = build_intermediate_path(m3u8_uri)
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
 
-def download_to_file(uri, destination_path):
-    "Retrives the file if it does not exist locally"
+def download_to_file(uri, destination_path, old_key=None, new_key=None):
+    '''
+    Retrives the file if it does not exist locally and changes the encryption if needed.
+
+    '''
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
         request = urllib2.urlopen(url=uri)
+        raw = request.read()
+        if new_key:
+            plain = decrypt(raw, old_key) if old_key else raw
+            raw = encrypt(plain, new_key)
         with open(filename, 'wb') as f:
-            f.write(request.read())
+            f.write(raw)
         return filename
     return False
 
