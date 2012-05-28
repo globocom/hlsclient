@@ -35,7 +35,7 @@ def test_active_server_changes_if_error_detected():
 	b = Balancer()
 	b.update(paths)
 
-	# Notify that active server has failed
+	# Notify that the active server has failed
 	assert [SERVERS[0]] == [s.server for s in b.actives]
 	b.notify_error(SERVERS[0], PATH)
 
@@ -62,6 +62,46 @@ def test_active_server_does_not_change_if_backup_fails():
 
 	# Assert that the active server remains the same
 	assert [SERVERS[0]] == [s.server for s in b.actives]
+
+def test_active_server_does_not_change_if_paths_updated():
+	PATH = '/path'
+	SERVERS = ['http://server1', 'http://server2', 'http://server3']
+	paths = {PATH: SERVERS}
+	b = Balancer()
+	b.update(paths)
+
+	# Notify that active server has failed
+	b.notify_error(SERVERS[0], PATH)
+	assert [SERVERS[1]] == [s.server for s in b.actives]
+
+	b.update(paths)
+	assert [SERVERS[1]] == [s.server for s in b.actives]
+
+def test_active_server_does_not_change_if_new_servers_added():
+	PATH = '/path'
+	SERVERS = ['http://server1', 'http://server2', 'http://server3']
+	paths = {PATH: SERVERS}
+	b = Balancer()
+	b.update(paths)
+
+	# Notify that active server has failed
+	b.notify_error(SERVERS[0], PATH)
+	assert [SERVERS[1]] == [s.server for s in b.actives]
+
+	new_servers = ['http://server3', 'http://server4', 'http://server2']
+	b.update({PATH: new_servers})
+	assert [SERVERS[1]] == [s.server for s in b.actives]
+	assert set(new_servers) == set(b.paths[PATH])
+
+def test_paths_can_be_removed():
+	PATH = '/path'
+	SERVERS = ['http://server1', 'http://server2', 'http://server3']
+	paths = {PATH: SERVERS}
+	b = Balancer()
+	b.update(paths)
+
+	b.update({})
+	assert [] == list(b.actives)
 
 def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch):
 	PATH = '/path'

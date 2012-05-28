@@ -7,14 +7,17 @@ class Balancer(object):
     '''
     NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
+    def __init__(self):
+        self.paths = {}
+        self.modified_at = {}
+
     def update(self, paths):
         '''
         ``paths`` is a dict returned from ``discover.discover()``
         '''
-        self.paths = {}
-        self.modified_at = {}
+        self._clean_removed_paths(paths)
         for path, servers in paths.items():
-            self.paths[path] = deque(servers)
+            self._update_path(path, servers)
 
     def notify_modified(self, server, path):
         '''
@@ -42,8 +45,25 @@ class Balancer(object):
                 active_server = self._active_server_for_path(path)
             yield PlaylistResource(active_server, path)
 
+    def _clean_removed_paths(self, new_paths):
+        removed_paths = set(self.paths.keys()).difference(new_paths.keys())
+        for path in removed_paths:
+            del self.modified_at[path]
+            del self.paths[path]
+
+    def _update_path(self, path, servers):
+        active = self._active_server_for_path(path)
+        if active in servers:
+            self.paths[path] = deque([active])
+            self.paths[path].extend([server for server in servers if server != active])
+        else:
+            self.paths[path] = deque(servers)
+            self.modified_at[path] = None
+
     def _active_server_for_path(self, path):
-        return self.paths[path][0]
+        servers = self.paths.get(path, [])
+        if servers:
+            return servers[0]
 
     def _change_active_server(self, path):
         self.paths[path].rotate(-1)
