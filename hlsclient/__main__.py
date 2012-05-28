@@ -17,25 +17,16 @@ def load_config(path=None):
         config.readfp(f)
     return config
 
-def create_logger():
-    logger = logging.getLogger('hls-client')
-    logger.setLevel(logging.DEBUG)
-
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-
-    logger.addHandler(ch)
-    return logger
+def setup_logging():
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 def main():
-    logger = create_logger()
-    logger.debug('HLS CLIENT Started')
+    setup_logging()
+    logging.debug('HLS CLIENT Started')
 
     config = load_config()
     destination = config.get('hlsclient', 'destination')
-    logger.debug('Config loaded')
+    logging.debug('Config loaded')
 
     balancer = Balancer()
     keys = {}
@@ -45,27 +36,27 @@ def main():
         d.create_index_for_variant_playlists(destination)
         paths = d.playlist_paths
 
-        logger.info(u'Discovered the following paths: %s' % paths.items())
+        logging.info(u'Discovered the following paths: %s' % paths.items())
 
         balancer.update(paths)
 
         for resource in balancer.actives:
             resource_path = str(resource)
-            logger.debug('Consuming %s' % resource_path)
+            logging.debug('Consuming %s' % resource_path)
             if resource_path not in keys:
                 key_name = "key_%s.bin" % hashlib.md5(resource_path).hexdigest()[:5]
                 keys[resource_path] = random_key(key_name)
             try:
                 modified = consume(resource_path, destination, keys[resource_path])
             except (HTTPError, IOError, OSError) as err:
-                logger.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
+                logging.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
                 balancer.notify_error(resource.server, resource.path)
             else:
                 if modified:
-                    logger.info('Notifying content modified: %s' % resource)
+                    logging.info('Notifying content modified: %s' % resource)
                     balancer.notify_modified(resource.server, resource.path)
                 else:
-                    logger.debug('Content not modified: %s' % resource)
+                    logging.debug('Content not modified: %s' % resource)
         time.sleep(2)
 
 if __name__ == "__main__":

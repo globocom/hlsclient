@@ -3,6 +3,7 @@ from pkcs7 import PKCS7Encoder
 
 import errno
 import os
+import logging
 import urllib2
 import urlparse
 
@@ -94,6 +95,7 @@ def download_to_file(uri, destination_path, old_key=None, new_key=False):
     '''
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
+        logging.debug("Downloading {url}".format(url=uri))
         request = urllib2.urlopen(url=uri)
         raw = request.read()
         if new_key is not False:
