@@ -1,13 +1,15 @@
 import ConfigParser
-import logging
-import time
 import hashlib
+import logging
 import os
+import time
+
+from logging.handlers import TimedRotatingFileHandler
 from urllib2 import HTTPError
 
 from balancer import Balancer
-from discover import PlaylistDiscover
 from consumer import consume, random_key
+from discover import PlaylistDiscover
 
 def load_config(path=None):
     if path is None:
@@ -17,16 +19,27 @@ def load_config(path=None):
         config.readfp(f)
     return config
 
-def setup_logging():
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+def setup_logging(config):
+    level = getattr(logging, config.get('hlsclient', 'log_level'))
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+    try:
+        filename = config.get('hlsclient', 'log_filename')
+        handler = TimedRotatingFileHandler(filename, when='midnight', encoding='utf-8', interval=1)
+    except ConfigParser.NoOptionError:
+        handler = logging.StreamHandler()
+
+    handler.setFormatter(logging.Formatter(format))
+
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logger.setLevel(level)
 
 def main():
-    setup_logging()
-    logging.debug('HLS CLIENT Started')
-
     config = load_config()
+    setup_logging(config)
+
+    logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
-    logging.debug('Config loaded')
 
     balancer = Balancer()
     keys = {}
