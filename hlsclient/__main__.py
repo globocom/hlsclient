@@ -17,10 +17,20 @@ def load_config(path=None):
         config.readfp(f)
     return config
 
-def main():
-    logging.basicConfig()
+def create_logger():
     logger = logging.getLogger('hls-client')
     logger.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+
+    logger.addHandler(ch)
+    return logger
+
+def main():
+    logger = create_logger()
     logger.debug('HLS CLIENT Started')
 
     config = load_config()
