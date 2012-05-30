@@ -87,6 +87,9 @@ def save_new_key(new_key, destination_path):
     if not os.path.exists(filename):
         with open(filename, 'wb') as f:
             f.write(new_key.key_value)
+    else:
+        # change modification time so the file is not removed by hlsclient.cleaner.clean
+        os.utime(filename, None)
 
 def download_to_file(uri, destination_path, old_key=None, new_key=False):
     '''
@@ -104,6 +107,9 @@ def download_to_file(uri, destination_path, old_key=None, new_key=False):
         with open(filename, 'wb') as f:
             f.write(raw)
         return filename
+    else:
+        # change modification time so the file is not removed by hlsclient.cleaner.clean
+        os.utime(filename, None)
     return False
 
 def random_key(key_name):

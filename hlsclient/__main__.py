@@ -10,6 +10,7 @@ from urllib2 import HTTPError
 from balancer import Balancer
 from consumer import consume, random_key
 from discover import PlaylistDiscover
+from cleaner import clean
 
 def load_config(path=None):
     if path is None:
@@ -40,6 +41,7 @@ def main():
 
     logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
+    clean_maxage = int(config.get('hlsclient', 'clean_maxage'))
 
     balancer = Balancer()
     keys = {}
@@ -70,6 +72,7 @@ def main():
                     balancer.notify_modified(resource.server, resource.path)
                 else:
                     logging.debug('Content not modified: %s' % resource)
+        clean(destination, clean_maxage)
         time.sleep(2)
 
 if __name__ == "__main__":
