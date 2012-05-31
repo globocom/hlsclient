@@ -5,7 +5,7 @@ import m3u8
 from m3u8.model import Segment, Key
 
 import hlsclient.consumer
-from hlsclient.consumer import encrypt, decrypt, random_key, save_new_key
+from hlsclient.consumer import encrypt, decrypt, get_random_key, save_new_key
 from .fake_m3u8_server import M3U8_SERVER
 
 def test_consumer_should_download_key_file(tmpdir):
@@ -78,11 +78,11 @@ def test_variant_m3u8_consumption(tmpdir):
 
 def test_consumer_should_be_able_to_encrypt_and_decrypt_content():
     content = "blabla"
-    fake_key = random_key("fake_key.bin")
+    fake_key = get_random_key("fake_key.bin")
     assert content == decrypt(encrypt(content, fake_key), fake_key)
 
 def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
-    fake_key = random_key("fake_key.bin")
+    fake_key = get_random_key("fake_key.bin")
     save_new_key(fake_key, str(tmpdir))
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
@@ -91,7 +91,7 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     plain_dir = tmpdir.join('plain')
     hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
 
-    fake_key = random_key("fake_key.bin")
+    fake_key = get_random_key("fake_key.bin")
     encrypted_dir = tmpdir.join('encrypted')
     hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), fake_key)
 
@@ -132,7 +132,7 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     playlist.key.key_value = original_dir.join('key.bin').read()
 
     new_dir = tmpdir.join('new')
-    new_key = random_key("new_key.bin")
+    new_key = get_random_key("new_key.bin")
     hlsclient.consumer.consume(m3u8_uri, str(new_dir), new_key)
 
     original = original_dir.join('encrypted1.ts').read()
@@ -144,7 +144,7 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     assert str(new_key) in m3u8_content
 
 def test_consumer_should_save_key_on_basepath(tmpdir):
-    fake_key = random_key("fake_key.bin")
+    fake_key = get_random_key("fake_key.bin")
     hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), fake_key)
 
     m3u8_content = tmpdir.join('live').join('low.m3u8').read()

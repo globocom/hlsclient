@@ -91,7 +91,7 @@ def save_new_key(new_key, destination_path):
         # change modification time so the file is not removed by hlsclient.cleaner.clean
         os.utime(filename, None)
 
-def download_to_file(uri, destination_path, old_key=None, new_key=False):
+def download_to_file(uri, destination_path, current_key=None, new_key=False):
     '''
     Retrives the file if it does not exist locally and changes the encryption if needed.
 
@@ -102,7 +102,7 @@ def download_to_file(uri, destination_path, old_key=None, new_key=False):
         request = urllib2.urlopen(url=uri)
         raw = request.read()
         if new_key is not False:
-            plain = decrypt(raw, old_key) if old_key else raw
+            plain = decrypt(raw, current_key) if current_key else raw
             raw = encrypt(plain, new_key) if new_key else plain
         with open(filename, 'wb') as f:
             f.write(raw)
@@ -112,7 +112,7 @@ def download_to_file(uri, destination_path, old_key=None, new_key=False):
         os.utime(filename, None)
     return False
 
-def random_key(key_name):
+def get_random_key(key_name):
     class IV:
         def __init__(self, iv):
             self.iv = iv
