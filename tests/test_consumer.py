@@ -86,6 +86,14 @@ def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
     save_new_key(fake_key, str(tmpdir))
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
+    assert tmpdir.join("fake_key.iv") in tmpdir.listdir()
+
+def test_save_new_key_should_create_iv_file_with_right_content(tmpdir):
+    fake_key = get_random_key("fake_key.bin")
+    fake_key.iv.iv = "rsrs"
+    save_new_key(fake_key, str(tmpdir))
+
+    assert 'rsrs' == tmpdir.join('fake_key.iv').read()
 
 def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     plain_dir = tmpdir.join('plain')
