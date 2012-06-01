@@ -12,6 +12,7 @@ from consumer import consume, KeyManager
 from discover import PlaylistDiscover
 from cleaner import clean
 
+
 def main():
     config = helpers.load_config()
     helpers.setup_logging(config)
@@ -37,7 +38,7 @@ def main():
             logging.debug('Consuming %s' % resource_path)
             if resource_path not in key_manager.keys:
                 key_name = "key_%s.bin" % hashlib.md5(resource_path).hexdigest()[:5]
-                key_manager.keys[resource_path] = key_manager.get_random_key(key_name)
+                key_manager.keys[resource_path] = key_manager.get_key(key_name)
             try:
                 modified = consume(resource_path, destination, key_manager.keys[resource_path])
             except (HTTPError, IOError, OSError) as err:

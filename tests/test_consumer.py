@@ -80,12 +80,12 @@ def test_variant_m3u8_consumption(tmpdir):
 def test_consumer_should_be_able_to_encrypt_and_decrypt_content():
     content = "blabla"
     key_manager = KeyManager()
-    fake_key = key_manager.get_random_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin")
     assert content == decrypt(encrypt(content, fake_key), fake_key)
 
 def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
     key_manager = KeyManager()
-    fake_key = key_manager.get_random_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin")
     key_manager.save_new_key(fake_key, str(tmpdir))
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
@@ -93,7 +93,7 @@ def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
 
 def test_save_new_key_should_create_iv_file_with_right_content(tmpdir):
     key_manager = KeyManager()
-    fake_key = key_manager.get_random_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin")
     fake_key.iv.iv = "rsrs"
     key_manager.save_new_key(fake_key, str(tmpdir))
 
@@ -104,7 +104,7 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
 
     key_manager = KeyManager()
-    fake_key = key_manager.get_random_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin")
     encrypted_dir = tmpdir.join('encrypted')
     hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), fake_key)
 
@@ -146,7 +146,7 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
 
     new_dir = tmpdir.join('new')
     key_manager = KeyManager()
-    new_key = key_manager.get_random_key("new_key.bin")
+    new_key = key_manager.get_key("new_key.bin")
     hlsclient.consumer.consume(m3u8_uri, str(new_dir), new_key)
 
     original = original_dir.join('encrypted1.ts').read()
@@ -159,7 +159,7 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
 
 def test_consumer_should_save_key_on_basepath(tmpdir):
     key_manager = KeyManager()
-    fake_key = key_manager.get_random_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin")
     hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), fake_key)
 
     m3u8_content = tmpdir.join('live').join('low.m3u8').read()
