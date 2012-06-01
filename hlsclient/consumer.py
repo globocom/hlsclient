@@ -10,6 +10,9 @@ import urlparse
 import m3u8
 
 class KeyManager(object):
+    def __init__(self):
+        self.keys = {}
+
     def download_key(self, playlist, destination_path):
         if playlist.key:
             filename = download_to_file(playlist.key.absolute_uri, destination_path)
