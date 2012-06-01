@@ -9,6 +9,46 @@ import urlparse
 
 import m3u8
 
+class KeyManager(object):
+    def download_key(self, playlist, destination_path):
+        if playlist.key:
+            filename = download_to_file(playlist.key.absolute_uri, destination_path)
+            with open(filename, 'rb') as f:
+                playlist.key.key_value = f.read()
+        return False
+
+    def save_new_key(self, new_key, destination_path):
+        key_filename = os.path.join(destination_path, os.path.basename(new_key.uri))
+        iv_filename = os.path.join(destination_path, os.path.basename(new_key.iv.uri))
+
+        if not os.path.exists(key_filename):
+            with open(key_filename, 'wb') as f:
+                f.write(new_key.key_value)
+
+            with open(iv_filename, 'wb') as f:
+                f.write(new_key.iv.iv)
+
+        else:
+            # change modification time so the file is not removed by hlsclient.cleaner.clean
+            os.utime(filename, None)
+
+    def get_random_key(self, key_name):
+        class IV:
+            def __init__(self, iv, key_name):
+                self.iv = iv
+                self.uri = key_name.replace(".bin", ".iv")
+
+            def __str__(self):
+                return '0X' + self.iv.encode('hex')
+
+        key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16), key_name))
+        key.key_value = os.urandom(16)
+        return key
+
+    def get_key_iv(self, key):
+        iv = str(key.iv)[2:] # Removes 0X prefix
+        return iv.decode('hex')
+
 def consume(m3u8_uri, destination_path, new_key=False):
     '''
     Given a ``m3u8_uri``, downloads all files to disk
@@ -34,7 +74,8 @@ def consume_variant_playlist(playlist, m3u8_uri, destination_path):
 
 def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False):
     full_path = build_full_path(destination_path, m3u8_uri)
-    downloaded_key = download_key(playlist, destination_path)
+    key_manager = KeyManager()
+    downloaded_key = key_manager.download_key(playlist, destination_path)
     downloaded_segments = download_segments(playlist, full_path, new_key)
 
     m3u8_has_changed = downloaded_key or any(downloaded_segments)
@@ -60,13 +101,6 @@ def ensure_directory_exists(directory):
         if error.errno != errno.EEXIST:
             raise
 
-def download_key(playlist, destination_path):
-    if playlist.key:
-        filename = download_to_file(playlist.key.absolute_uri, destination_path)
-        with open(filename, 'rb') as f:
-            playlist.key.key_value = f.read()
-    return False
-
 def download_segments(playlist, destination_path, new_key):
     segments = [segment.absolute_uri for segment in playlist.segments]
     return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
@@ -74,28 +108,14 @@ def download_segments(playlist, destination_path, new_key):
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     playlist.basepath = build_intermediate_path(m3u8_uri)
     if new_key:
-        save_new_key(new_key, full_path)
+        key_manager = KeyManager()
+        key_manager.save_new_key(new_key, full_path)
         playlist.version = "2"
         playlist.key = new_key
     elif new_key is None:
         playlist.key = None
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
     playlist.dump(filename)
-
-def save_new_key(new_key, destination_path):
-    key_filename = os.path.join(destination_path, os.path.basename(new_key.uri))
-    iv_filename = os.path.join(destination_path, os.path.basename(new_key.iv.uri))
-
-    if not os.path.exists(key_filename):
-        with open(key_filename, 'wb') as f:
-            f.write(new_key.key_value)
-
-        with open(iv_filename, 'wb') as f:
-            f.write(new_key.iv.iv)
-
-    else:
-        # change modification time so the file is not removed by hlsclient.cleaner.clean
-        os.utime(filename, None)
 
 def download_to_file(uri, destination_path, current_key=None, new_key=False):
     '''
@@ -118,34 +138,19 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
         os.utime(filename, None)
     return False
 
-def get_random_key(key_name):
-    class IV:
-        def __init__(self, iv, key_name):
-            self.iv = iv
-            self.uri = key_name.replace(".bin", ".iv")
-
-        def __str__(self):
-            return '0X' + self.iv.encode('hex')
-
-    key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16), key_name))
-    key.key_value = os.urandom(16)
-    return key
-
-def get_key_iv(key):
-    iv = str(key.iv)[2:] # Removes 0X prefix
-    return iv.decode('hex')
-
 def encrypt(data, key):
     encoder = PKCS7Encoder()
     padded_text = encoder.encode(data)
-    encryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
+    key_manager = KeyManager()
+    encryptor = AES.new(key.key_value, AES.MODE_CBC, key_manager.get_key_iv(key))
     encrypted_data = encryptor.encrypt(padded_text)
 
     return encrypted_data
 
 def decrypt(data, key):
     encoder = PKCS7Encoder()
-    decryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
+    key_manager = KeyManager()
+    decryptor = AES.new(key.key_value, AES.MODE_CBC, key_manager.get_key_iv(key))
     plain = decryptor.decrypt(data)
 
     return encoder.decode(plain)

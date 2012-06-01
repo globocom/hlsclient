@@ -8,7 +8,7 @@ from logging.handlers import TimedRotatingFileHandler
 from urllib2 import HTTPError
 
 from balancer import Balancer
-from consumer import consume, get_random_key
+from consumer import consume, KeyManager
 from discover import PlaylistDiscover
 from cleaner import clean
 
@@ -44,6 +44,7 @@ def main():
     clean_maxage = int(config.get('hlsclient', 'clean_maxage'))
 
     balancer = Balancer()
+    key_manager = KeyManager()
     keys = {}
 
     while True:
@@ -60,7 +61,7 @@ def main():
             logging.debug('Consuming %s' % resource_path)
             if resource_path not in keys:
                 key_name = "key_%s.bin" % hashlib.md5(resource_path).hexdigest()[:5]
-                keys[resource_path] = get_random_key(key_name)
+                keys[resource_path] = key_manager.get_random_key(key_name)
             try:
                 modified = consume(resource_path, destination, keys[resource_path])
             except (HTTPError, IOError, OSError) as err:
