@@ -1,4 +1,5 @@
 import os
+import logging
 import ConfigParser
 
 def load_config(path=None):

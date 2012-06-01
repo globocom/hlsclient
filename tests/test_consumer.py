@@ -173,4 +173,9 @@ def test_KeyManager_should_have_destination_path(monkeypatch):
     expected = config.get('hlsclient', 'destination')
     key_manager = KeyManager()
     assert expected == key_manager.destination
-
+#
+#def test_KeyManager_should_create_key_and_iv_if_is_requested_and_dont_exist():
+    #key_manager = KeyManager()
+    #destination_path = 'http://liveips.nasa.gov.edgesuite.net:80/msfc/Edge.m3u8'
+    #key_manager.get_key('rsrs')
+#

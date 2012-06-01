@@ -43,7 +43,8 @@ class KeyManager(object):
 
         else:
             # change modification time so the file is not removed by hlsclient.cleaner.clean
-            os.utime(filename, None)
+            os.utime(key_filename, None)
+            os.utime(iv_filename, None)
 
     def get_key(self, key_name):
         key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16), key_name))
