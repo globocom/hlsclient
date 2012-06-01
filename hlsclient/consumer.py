@@ -6,11 +6,21 @@ import os
 import logging
 import urllib2
 import urlparse
-
+import helpers
 import m3u8
+
+class IV:
+    def __init__(self, iv, key_name):
+        self.iv = iv
+        self.uri = key_name.replace(".bin", ".iv")
+
+    def __str__(self):
+        return '0X' + self.iv.encode('hex')
 
 class KeyManager(object):
     def __init__(self):
+        config = helpers.load_config()
+        self.destination = config.get("hlsclient", "destination")
         self.keys = {}
 
     def download_key(self, playlist, destination_path):
@@ -36,14 +46,6 @@ class KeyManager(object):
             os.utime(filename, None)
 
     def get_random_key(self, key_name):
-        class IV:
-            def __init__(self, iv, key_name):
-                self.iv = iv
-                self.uri = key_name.replace(".bin", ".iv")
-
-            def __str__(self):
-                return '0X' + self.iv.encode('hex')
-
         key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16), key_name))
         key.key_value = os.urandom(16)
         return key

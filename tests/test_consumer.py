@@ -7,6 +7,7 @@ from m3u8.model import Segment, Key
 import hlsclient.consumer
 from hlsclient.consumer import encrypt, decrypt, KeyManager
 from .fake_m3u8_server import M3U8_SERVER
+from hlsclient import helpers
 
 def test_consumer_should_download_key_file(tmpdir):
     hlsclient.consumer.consume(M3U8_SERVER + '/crypto.m3u8', str(tmpdir))
@@ -166,3 +167,10 @@ def test_consumer_should_save_key_on_basepath(tmpdir):
     assert tmpdir.join('live').join('fake_key.bin').check()
     assert str(fake_key) in m3u8_content
     assert 'URI="fake_key.bin"' in str(fake_key)
+
+def test_KeyManager_should_have_destination_path(monkeypatch):
+    config = helpers.load_config()
+    expected = config.get('hlsclient', 'destination')
+    key_manager = KeyManager()
+    assert expected == key_manager.destination
+
