@@ -1,6 +1,7 @@
 import os
 import logging
 import ConfigParser
+from logging.handlers import TimedRotatingFileHandler
 
 def load_config(path=None):
     if path is None:

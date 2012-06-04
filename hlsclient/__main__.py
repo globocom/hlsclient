@@ -5,7 +5,6 @@ import csv
 
 import helpers
 
-from logging.handlers import TimedRotatingFileHandler
 from urllib2 import HTTPError
 
 from balancer import Balancer
