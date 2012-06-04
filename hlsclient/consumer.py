@@ -63,6 +63,7 @@ def consume(m3u8_uri, destination_path, new_key=False):
     - new_key:
         If False, keeps existing encryption
         If None, decrypts file
+        If any other value, this value is set
     '''
     playlist = m3u8.load(m3u8_uri)
 
