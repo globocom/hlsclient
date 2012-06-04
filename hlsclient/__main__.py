@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import time
+import csv
 
 import helpers
 
@@ -21,6 +22,13 @@ def main():
     destination = config.get('hlsclient', 'destination')
     clean_maxage = int(config.get('hlsclient', 'clean_maxage'))
     encrypt = bool(config.get('hlsclient', 'encrypt'))
+
+    # ignore all comma separated wildcard names for `clean` call
+    if config.has_option('hlsclient', 'clean_ignore'):
+        patterns = config.get('hlsclient', 'clean_ignore')
+        ignores = list(csv.reader([patterns]))[0]
+    else:
+        ignores = []
 
     balancer = Balancer()
 
@@ -47,7 +55,7 @@ def main():
                     balancer.notify_modified(resource.server, resource.path)
                 else:
                     logging.debug('Content not modified: %s' % resource)
-        clean(destination, clean_maxage)
+        clean(destination, clean_maxage, ignores)
         time.sleep(2)
 
 if __name__ == "__main__":
