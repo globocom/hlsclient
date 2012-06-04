@@ -77,15 +77,15 @@ def test_variant_m3u8_consumption(tmpdir):
     for fname in expected_downloaded:
         assert M3U8_SERVER not in open(str(tmpdir.join(fname))).read()
 
-def test_consumer_should_be_able_to_encrypt_and_decrypt_content():
+def test_consumer_should_be_able_to_encrypt_and_decrypt_content(tmpdir):
     content = "blabla"
     key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
     assert content == decrypt(encrypt(content, fake_key), fake_key)
 
 def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
     key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
     key_manager.save_new_key(fake_key, str(tmpdir))
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
@@ -93,7 +93,7 @@ def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
 
 def test_save_new_key_should_create_iv_file_with_right_content(tmpdir):
     key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin")
+    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
     fake_key.iv.iv = "rsrs"
     key_manager.save_new_key(fake_key, str(tmpdir))
 
@@ -103,20 +103,42 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     plain_dir = tmpdir.join('plain')
     hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
 
-    key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin")
     encrypted_dir = tmpdir.join('encrypted')
-    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), fake_key)
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), True)
 
     plain = plain_dir.join('low1.ts').read()
     encrypted = encrypted_dir.join('low1.ts').read()
     m3u8_content = encrypted_dir.join('low.m3u8').read()
 
-    assert plain == decrypt(encrypted, fake_key)
-    assert encrypted_dir.join("fake_key.bin").check()
-    assert str(fake_key) in m3u8_content
-    assert 'URI="fake_key.bin"' in str(fake_key)
+    assert encrypted_dir.join("low.bin").check()
+    assert 'URI="low.bin"' in m3u8_content
     assert "#EXT-X-VERSION:2" in m3u8_content
+
+    key_manager = KeyManager()
+    new_key = key_manager.get_key_from_disk("low.bin", str(encrypted_dir))
+    assert plain == decrypt(encrypted, new_key)
+
+def test_consumer_should_reuse_existant_key(tmpdir):
+    plain_dir = tmpdir.join('plain')
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
+
+    encrypted_dir = tmpdir.join('encrypted')
+
+    key_manager = KeyManager()
+    new_key = key_manager.create_key('low.bin')
+    os.makedirs(str(encrypted_dir))
+    key_manager.save_new_key(new_key, str(encrypted_dir))
+
+    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), True)
+
+    plain = plain_dir.join('low1.ts').read()
+    encrypted = encrypted_dir.join('low1.ts').read()
+    m3u8_content = encrypted_dir.join('low.m3u8').read()
+
+    assert encrypted_dir.join("low.bin").check()
+    assert 'URI="low.bin"' in m3u8_content
+    assert "#EXT-X-VERSION:2" in m3u8_content
+    assert plain == decrypt(encrypted, new_key)
 
 def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
     m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
@@ -145,37 +167,35 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     playlist.key.key_value = original_dir.join('key.bin').read()
 
     new_dir = tmpdir.join('new')
-    key_manager = KeyManager()
-    new_key = key_manager.get_key("new_key.bin")
-    hlsclient.consumer.consume(m3u8_uri, str(new_dir), new_key)
+    hlsclient.consumer.consume(m3u8_uri, str(new_dir), True)
 
     original = original_dir.join('encrypted1.ts').read()
     new = new_dir.join('encrypted2.ts').read()
     m3u8_content = new_dir.join('crypto.m3u8').read()
 
+    assert new_dir.join("crypto.bin").check()
+    assert 'URI="crypto.bin"' in m3u8_content
+
+    key_manager = KeyManager()
+    new_key = key_manager.get_key_from_disk("crypto.bin", str(new_dir))
     assert decrypt(original, playlist.key) == decrypt(new, new_key)
-    assert new_dir.join("new_key.bin").check()
-    assert str(new_key) in m3u8_content
+
 
 def test_consumer_should_save_key_on_basepath(tmpdir):
-    key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin")
-    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), fake_key)
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(tmpdir), True)
 
     m3u8_content = tmpdir.join('live').join('low.m3u8').read()
 
-    assert tmpdir.join('live').join('fake_key.bin').check()
-    assert str(fake_key) in m3u8_content
-    assert 'URI="fake_key.bin"' in str(fake_key)
+    assert tmpdir.join('live').join('low.bin').check()
+    assert '#EXT-X-KEY:METHOD=AES-128,URI="low.bin",IV=' in m3u8_content
 
 def test_KeyManager_should_have_destination_path(monkeypatch):
     config = helpers.load_config()
     expected = config.get('hlsclient', 'destination')
     key_manager = KeyManager()
     assert expected == key_manager.destination
-#
-#def test_KeyManager_should_create_key_and_iv_if_is_requested_and_dont_exist():
-    #key_manager = KeyManager()
-    #destination_path = 'http://liveips.nasa.gov.edgesuite.net:80/msfc/Edge.m3u8'
-    #key_manager.get_key('rsrs')
-#
+
+def test_KeyManager_should_generate_proper_keyname():
+    key_manager = KeyManager()
+    key_name = key_manager.get_key_name("http://example.com/path/to/playlist.m3u8")
+    assert "playlist.bin" == key_name

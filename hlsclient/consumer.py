@@ -46,42 +46,78 @@ class KeyManager(object):
             os.utime(key_filename, None)
             os.utime(iv_filename, None)
 
-    def get_key(self, key_name):
-        key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None,  iv=IV(os.urandom(16), key_name))
+    def get_key_name(self, m3u8_uri):
+        return os.path.basename(m3u8_uri).replace('.m3u8', '.bin')
+
+    def create_key(self, key_name):
+        iv = IV(os.urandom(16), key_name)
+        key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None, iv=iv)
         key.key_value = os.urandom(16)
+        return key
+
+    def get_key_from_disk(self, key_name, destination_path):
+        key_path = os.path.join(destination_path, key_name)
+        if not os.path.exists(key_path):
+            return False
+
+        with open(key_path, "r") as f:
+            key_value = f.read()
+
+        iv_path = key_path.replace('.bin', '.iv')
+        with open(iv_path, "r") as f:
+            iv_value = f.read()
+
+        iv = IV(iv_value, key_name)
+        key = m3u8.model.Key(method='AES-128', uri=key_name, baseuri=None, iv=iv)
+        key.key_value = key_value
         return key
 
     def get_key_iv(self, key):
         iv = str(key.iv)[2:] # Removes 0X prefix
         return iv.decode('hex')
 
-def consume(m3u8_uri, destination_path, new_key=False):
+    def get_key(self, key_name, destination_path):
+        key = self.get_key_from_disk(key_name, destination_path)
+        if not key:
+            key = self.create_key(key_name)
+        return key
+
+
+def consume(m3u8_uri, destination_path, encrypt=False):
     '''
     Given a ``m3u8_uri``, downloads all files to disk
     The remote path structure is maintained under ``destination_path``
 
-    - new_key:
+    - encrypt:
         If False, keeps existing encryption
         If None, decrypts file
-        If any other value, this value is set
+        If True, a new key is created
+
     '''
     playlist = m3u8.load(m3u8_uri)
 
     if playlist.is_variant:
-        return consume_variant_playlist(playlist, m3u8_uri, destination_path)
+        return consume_variant_playlist(playlist, m3u8_uri, destination_path, encrypt)
     else:
-        return consume_single_playlist(playlist, m3u8_uri, destination_path, new_key)
+        return consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt)
 
-def consume_variant_playlist(playlist, m3u8_uri, destination_path):
+def consume_variant_playlist(playlist, m3u8_uri, destination_path, encrypt=False):
     full_path = build_full_path(destination_path, m3u8_uri)
     for p in playlist.playlists:
-        consume(p.absolute_uri, destination_path)
+        consume(p.absolute_uri, destination_path, encrypt)
     save_m3u8(playlist, m3u8_uri, full_path)
     return True
 
-def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False):
+def consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt=False):
     full_path = build_full_path(destination_path, m3u8_uri)
+
     key_manager = KeyManager()
+    if encrypt:
+        key_name = key_manager.get_key_name(m3u8_uri)
+        new_key = key_manager.get_key(key_name, destination_path)
+    else:
+        new_key = encrypt
+
     downloaded_key = key_manager.download_key(playlist, destination_path)
     downloaded_segments = download_segments(playlist, full_path, new_key)
 
@@ -92,10 +128,18 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, new_key=False)
     return m3u8_has_changed
 
 def build_intermediate_path(m3u8_uri):
+    '''
+    Returns the original m3u8 base path
+
+    '''
     url_path = urlparse.urlparse(m3u8_uri).path
     return os.path.dirname(url_path)
 
 def build_full_path(destination_path, m3u8_uri):
+    '''
+    Returns the path where the m3u8, ts and bin will be saved.
+
+    '''
     intermediate_path = build_intermediate_path(m3u8_uri)[1:] # ignore first "/"
     full_path = os.path.join(destination_path, intermediate_path)
     ensure_directory_exists(full_path)
@@ -113,6 +157,15 @@ def download_segments(playlist, destination_path, new_key):
     return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
+    '''
+    Saves the m3u8, updating the key if needed
+
+    - new_key:
+        If False, keeps existing encryption
+        If None, decrypts file
+        If any other value, this value is set
+
+    '''
     playlist.basepath = build_intermediate_path(m3u8_uri)
     if new_key:
         key_manager = KeyManager()
