@@ -20,7 +20,7 @@ def main():
     logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
     clean_maxage = int(config.get('hlsclient', 'clean_maxage'))
-    encrypt = bool(config.get('hlsclient', 'encrypt'))
+    encrypt = config.getboolean('hlsclient', 'encrypt')
 
     # ignore all comma separated wildcard names for `clean` call
     if config.has_option('hlsclient', 'clean_ignore'):
