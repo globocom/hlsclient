@@ -120,22 +120,22 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
 
 def test_consumer_should_reuse_existant_key(tmpdir):
     plain_dir = tmpdir.join('plain')
-    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(plain_dir))
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(plain_dir))
 
     encrypted_dir = tmpdir.join('encrypted')
 
     key_manager = KeyManager()
     new_key = key_manager.create_key('low.bin')
-    os.makedirs(str(encrypted_dir))
-    key_manager.save_new_key(new_key, str(encrypted_dir))
+    os.makedirs(str(encrypted_dir.join('live')))
+    key_manager.save_new_key(new_key, str(encrypted_dir.join('live')))
 
-    hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(encrypted_dir), True)
+    hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(encrypted_dir), True)
 
-    plain = plain_dir.join('low1.ts').read()
-    encrypted = encrypted_dir.join('low1.ts').read()
-    m3u8_content = encrypted_dir.join('low.m3u8').read()
+    plain = plain_dir.join('live').join('low1.ts').read()
+    encrypted = encrypted_dir.join('live').join('low1.ts').read()
+    m3u8_content = encrypted_dir.join('live').join('low.m3u8').read()
 
-    assert encrypted_dir.join("low.bin").check()
+    assert encrypted_dir.join('live').join("low.bin").check()
     assert 'URI="low.bin"' in m3u8_content
     assert "#EXT-X-VERSION:2" in m3u8_content
     assert plain == decrypt(encrypted, new_key)

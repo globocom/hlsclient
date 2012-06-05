@@ -55,8 +55,8 @@ class KeyManager(object):
         key.key_value = os.urandom(16)
         return key
 
-    def get_key_from_disk(self, key_name, destination_path):
-        key_path = os.path.join(destination_path, key_name)
+    def get_key_from_disk(self, key_name, full_path):
+        key_path = os.path.join(full_path, key_name)
         if not os.path.exists(key_path):
             return False
 
@@ -76,8 +76,8 @@ class KeyManager(object):
         iv = str(key.iv)[2:] # Removes 0X prefix
         return iv.decode('hex')
 
-    def get_key(self, key_name, destination_path):
-        key = self.get_key_from_disk(key_name, destination_path)
+    def get_key(self, key_name, full_path):
+        key = self.get_key_from_disk(key_name, full_path)
         if not key:
             key = self.create_key(key_name)
         return key
@@ -114,7 +114,7 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt=False)
     key_manager = KeyManager()
     if encrypt:
         key_name = key_manager.get_key_name(m3u8_uri)
-        new_key = key_manager.get_key(key_name, destination_path)
+        new_key = key_manager.get_key(key_name, full_path)
     else:
         new_key = encrypt
 
