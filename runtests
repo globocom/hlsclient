@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function install_deps {
-    pip install pytest
+    pip install pytest bottle
 }
 
 function run {
