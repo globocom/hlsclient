@@ -56,13 +56,12 @@ def main():
                     else:
                         logging.debug('Content not modified: %s' % resource)
             clean(destination, clean_maxage, ignores)
-            time.sleep(2)
         except Exception as e:
-            logging.info('ERRRRRRRR! An unknown error happened:\n%s\n' % e)
+            logging.exception('An unknown error happened')
         except KeyboardInterrupt:
-            # stop running
             logging.debug('Quitting...')
             return
+        time.sleep(2)
 
 if __name__ == "__main__":
     main()
