@@ -1,6 +1,6 @@
 import os.path
 import time
-
+from hlsclient.helpers import load_config
 from hlsclient.cleaner import clean
 
 SECONDS = 1
@@ -46,6 +46,24 @@ def test_ensure_removes_are_based_on_access_time(tmpdir):
 
     clean(tmpdir, 50 * SECONDS, [])
     assert os.listdir(tmpdir) == fresh_files + ['old1.ts']
+
+def test_should_not_erase_files_with_ops_prefix(tmpdir):
+    tmpdir = str(tmpdir)
+    some_time_ago = time.time() - 60 * SECONDS
+
+    config = load_config()
+    ignores = [config.get('hlsclient', 'clean_ignore')]
+
+    old_dir1 = os.path.join(tmpdir, 'need_to_be_erased')
+    old_dir2 = os.path.join(tmpdir, 'opsdir1')
+    os.makedirs(old_dir1)
+    os.makedirs(old_dir2)
+    create_old_files(tmpdir, ['ops_acesso_simultaneo.ts', 'ops_rsrs.ts'], some_time_ago)
+    os.utime(old_dir1, (some_time_ago, some_time_ago))
+    os.utime(old_dir2, (some_time_ago, some_time_ago))
+
+    clean(tmpdir, 50 * SECONDS, ignores)
+    assert os.listdir(tmpdir) == ['ops_acesso_simultaneo.ts', 'ops_rsrs.ts', 'opsdir1']
 
 def test_should_be_possible_to_ignore_globs(tmpdir):
     tmpdir = str(tmpdir)
