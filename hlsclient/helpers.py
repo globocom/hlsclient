@@ -1,4 +1,5 @@
 import os
+import csv
 import logging
 import ConfigParser
 from logging.handlers import TimedRotatingFileHandler
@@ -25,4 +26,13 @@ def setup_logging(config):
     logger = logging.getLogger()
     logger.addHandler(handler)
     logger.setLevel(level)
+
+def get_ignore_patterns(config):
+    if config.has_option('hlsclient', 'clean_ignore'):
+        patterns = config.get('hlsclient', 'clean_ignore')
+        ignore_patterns = list(csv.reader([patterns]))[0]
+        return [ignore.strip() for ignore in ignore_patterns]
+
+    return []
+
 

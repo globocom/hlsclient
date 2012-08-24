@@ -29,6 +29,7 @@ def filter_ignored(names, ignores):
             names.remove(name)
     return names
 
+
 def clean(path, maxage, ignores):
     logging.debug("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
     for root, dirs, files in os.walk(path):
