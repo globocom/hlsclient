@@ -23,11 +23,7 @@ def main():
     encrypt = config.getboolean('hlsclient', 'encrypt')
 
     # ignore all comma separated wildcard names for `clean` call
-    if config.has_option('hlsclient', 'clean_ignore'):
-        patterns = config.get('hlsclient', 'clean_ignore')
-        ignores = list(csv.reader([patterns]))[0]
-    else:
-        ignores = []
+    ignores = get_ignore_patterns(config)
 
     balancer = Balancer()
 

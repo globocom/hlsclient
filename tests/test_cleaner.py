@@ -1,6 +1,7 @@
 import os.path
 import time
-from hlsclient.helpers import load_config
+import csv
+from hlsclient.helpers import load_config, get_ignore_patterns
 from hlsclient.cleaner import clean
 
 SECONDS = 1
@@ -33,7 +34,6 @@ def test_should_remove_old_files_and_directories(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     assert os.listdir(tmpdir) == fresh_files
 
-
 def test_ensure_removes_are_based_on_access_time(tmpdir):
     tmpdir = str(tmpdir)
     old_fnames = 'old1.ts old2.ts old3.ts'.split()
@@ -47,12 +47,25 @@ def test_ensure_removes_are_based_on_access_time(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     assert os.listdir(tmpdir) == fresh_files + ['old1.ts']
 
+def test_ensure_files_with_a_dot_prefix_should_not_be_erased(tmpdir):
+    tmpdir = str(tmpdir)
+    some_time_ago = time.time() - 60 * SECONDS
+    old_fnames = 'old1.ts old2.ts old3.ts .should_not_be_erased.ts'.split()
+
+    config = load_config()
+    ignores = get_ignore_patterns(config)
+
+    create_old_files(tmpdir, old_fnames, some_time_ago)
+
+    clean(tmpdir, 50 * SECONDS, ignores)
+    assert os.listdir(tmpdir) ==  ['.should_not_be_erased.ts']
+
 def test_should_not_erase_files_with_ops_prefix(tmpdir):
     tmpdir = str(tmpdir)
     some_time_ago = time.time() - 60 * SECONDS
 
     config = load_config()
-    ignores = [config.get('hlsclient', 'clean_ignore')]
+    ignores = get_ignore_patterns(config)
 
     old_dir1 = os.path.join(tmpdir, 'need_to_be_erased')
     old_dir2 = os.path.join(tmpdir, 'opsdir1')
