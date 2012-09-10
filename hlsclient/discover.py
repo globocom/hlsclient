@@ -8,42 +8,6 @@ import m3u8
 
 Server = namedtuple('Server', 'server port')
 
-class PlaylistDiscover(object):
-    def __init__(self, config):
-        self.playlists = discover(config)
-        self.playlist_paths = self.get_paths(self.playlists)
-
-    def get_paths(self, playlists):
-        paths = {}
-        for m3u8_uri, info in playlists.items():
-            paths.update(self._get_servers(info['streams']))
-
-        return paths
-
-    def create_index_for_variant_playlists(self, destination):
-        for m3u8_uri, info in self.playlists.items():
-            if info['needs_index']:
-                self._generate_variant_playlist(info, destination + m3u8_uri)
-
-    def _generate_variant_playlist(self, info, destination):
-        variant_m3u8 = m3u8.M3U8()
-        for m3u8_uri in info['streams']:
-            bandwidth = self._get_bandwidth(info, m3u8_uri)
-            playlist = m3u8.Playlist(m3u8_uri, stream_info={'bandwidth': bandwidth, 'program_id': '1'}, baseuri="")
-            variant_m3u8.add_playlist(playlist)
-
-        variant_m3u8.dump(destination)
-
-    def _get_bandwidth(self, info, m3u8_uri):
-        return str(info['streams'][m3u8_uri]['bandwidth'])
-
-    def _get_servers(self, streams):
-        result = {}
-        for m3u8_uri, info in streams.items():
-            result[m3u8_uri] = info['servers']
-
-        return result
-
 def discover(config):
     '''
     Returns a dictionary with format:
@@ -76,10 +40,9 @@ def discover(config):
 
     '''
     api_url = config.get('discover', 'api_url')
-    info = get_info_from_url(api_url)
     playlists = {}
 
-    for info in get_info_from_url(api_url):
+    for info in _get_info_from_url(api_url):
         m3u8_uri = info['m3u8']
         streams = {}
         playlists[m3u8_uri] = {'needs_index': info['needs_index'], 'streams': streams}
@@ -91,8 +54,45 @@ def discover(config):
 
     return playlists
 
+def discover_playlist_paths_and_create_indexes(config, destination):
+    playlists= discover(config)
+    _create_index_for_variant_playlists(playlists, destination)
+    return playlists
 
-def get_info_from_url(url):
+def discover_playlists(config):
+    playlists = discover(config)
+    return _get_paths(playlists)
+
+def _create_index_for_variant_playlists(playlists, destination):
+    for m3u8_uri, info in playlists.items():
+        if info['needs_index']:
+            _generate_variant_playlist(info, destination + m3u8_uri)
+
+def _generate_variant_playlist(info, destination):
+    variant_m3u8 = m3u8.M3U8()
+    for m3u8_uri in info['streams']:
+        bandwidth = _get_bandwidth(info, m3u8_uri)
+        playlist = m3u8.Playlist(m3u8_uri, stream_info={'bandwidth': bandwidth, 'program_id': '1'}, baseuri="")
+        variant_m3u8.add_playlist(playlist)
+
+    variant_m3u8.dump(destination)
+
+def _get_paths(playlists):
+    paths = {}
+    for m3u8_uri, info in playlists.items():
+        paths.update(_get_servers(info['streams']))
+    return paths
+
+def _get_bandwidth(info, m3u8_uri):
+    return str(info['streams'][m3u8_uri]['bandwidth'])
+
+def _get_servers(streams):
+    result = {}
+    for m3u8_uri, info in streams.items():
+        result[m3u8_uri] = info['servers']
+    return result
+
+def _get_info_from_url(url):
     # FIXME: implement error checking
     return json.load(urllib.urlopen(url))['actives']
 

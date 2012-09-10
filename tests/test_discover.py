@@ -3,8 +3,7 @@ import io
 import os
 
 import hlsclient.discover
-from hlsclient.discover import Server, PlaylistDiscover
-
+from hlsclient.discover import Server
 from tests.fake_m3u8_server import VARIANT_PLAYLIST, M3U8_SERVER
 
 def test_discovers_simple_m3u8_from_api_url_in_config(monkeypatch):
@@ -23,12 +22,12 @@ api_url = http://localhost:4422/tests.m3u8
             'needs_index': False,
         }]
 
-    monkeypatch.setattr(hlsclient.discover, 'get_info_from_url', fake_get_info_from_url)
-    discover = PlaylistDiscover(config)
+    monkeypatch.setattr(hlsclient.discover, '_get_info_from_url', fake_get_info_from_url)
+    paths = hlsclient.discover.discover_playlists(config)
 
     playlist = '/hls-without-mbr.m3u8'
     servers = [Server(server='http://serv1.com', port=80), Server(server='http://serv2.com', port=80)]
-    assert {playlist: servers} == discover.playlist_paths
+    assert {playlist: servers} == paths
 
 def test_discovers_variant_m3u8_from_api_url_in_config(monkeypatch):
     sample_config = """[discover]
@@ -50,9 +49,8 @@ api_url = http://localhost:4422/mbr-tests.m3u8
             'needs_index': True,
         }]
 
-    monkeypatch.setattr(hlsclient.discover, 'get_info_from_url', fake_get_info_from_url)
-
-    discover = PlaylistDiscover(config)
+    monkeypatch.setattr(hlsclient.discover, '_get_info_from_url', fake_get_info_from_url)
+    paths = hlsclient.discover.discover_playlists(config)
 
     low_playlist = '/hls100.m3u8'
     mid_playlist = '/hls200.m3u8'
@@ -63,17 +61,16 @@ api_url = http://localhost:4422/mbr-tests.m3u8
         high_playlist: [Server('http://serv1.com', port=82), Server('http://serv2.com', 3456)],
     }
 
-    assert expected_result == discover.playlist_paths
+    assert expected_result == paths
 
-def test_PlaylistDiscover_should_create_m3u8_for_variant_playlists(tmpdir):
+def test_discover_should_create_m3u8_for_variant_playlists(tmpdir):
     variant_config = """[discover]
 api_url = {host}/variant.json
 """.format(host=M3U8_SERVER)
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(variant_config))
 
-    discover = PlaylistDiscover(config)
-    discover.create_index_for_variant_playlists(str(tmpdir))
+    hlsclient.discover.discover_playlist_paths_and_create_indexes(config, str(tmpdir))
 
     filepath = str(tmpdir.join('hls-with-mbr.m3u8'))
 

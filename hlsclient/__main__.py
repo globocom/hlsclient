@@ -9,7 +9,7 @@ from urllib2 import HTTPError
 
 from balancer import Balancer
 from consumer import consume
-from discover import PlaylistDiscover
+from discover import discover_playlist_paths_and_create_indexes
 from cleaner import clean
 
 
@@ -29,9 +29,7 @@ def main():
 
     while True:
         try:
-            d = PlaylistDiscover(config)
-            d.create_index_for_variant_playlists(destination)
-            paths = d.playlist_paths
+            paths = discover_playlist_paths_and_create_indexes(config, destination)
 
             logging.info(u'Discovered the following paths: %s' % paths.items())
 
