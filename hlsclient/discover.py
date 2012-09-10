@@ -32,6 +32,15 @@ def discover_playlists(config):
     playlists = discover(config)
     return _get_paths(playlists)
 
+def _get_paths(playlists):
+    paths = {}
+    for m3u8_uri, info in playlists.items():
+        paths.update(_get_servers(info['streams']))
+    return paths
+
+def _get_servers(streams):
+    return {m3u8_uri: info['servers'] for m3u8_uri, info in streams.items()}
+
 def discover(config):
     '''
     Returns a list with format:
@@ -75,6 +84,10 @@ def discover(config):
 
     return playlists
 
+def _get_info_from_url(url):
+    # FIXME: implement error checking
+    return json.load(urllib.urlopen(url))['actives']
+
 def _create_index_for_variant_playlists(playlists, destination):
     for m3u8_uri, info in playlists.items():
         if info['needs_index']:
@@ -86,27 +99,10 @@ def _generate_variant_playlist(info, destination):
         bandwidth = _get_bandwidth(info, m3u8_uri)
         playlist = m3u8.Playlist(m3u8_uri, stream_info={'bandwidth': bandwidth, 'program_id': '1'}, baseuri="")
         variant_m3u8.add_playlist(playlist)
-
     variant_m3u8.dump(destination)
-
-def _get_paths(playlists):
-    paths = {}
-    for m3u8_uri, info in playlists.items():
-        paths.update(_get_servers(info['streams']))
-    return paths
 
 def _get_bandwidth(info, m3u8_uri):
     return str(info['streams'][m3u8_uri]['bandwidth'])
-
-def _get_servers(streams):
-    result = {}
-    for m3u8_uri, info in streams.items():
-        result[m3u8_uri] = info['servers']
-    return result
-
-def _get_info_from_url(url):
-    # FIXME: implement error checking
-    return json.load(urllib.urlopen(url))['actives']
 
 def _append_m3u8_without_mbr_to(result, info):
     playlist = info['m3u8']
