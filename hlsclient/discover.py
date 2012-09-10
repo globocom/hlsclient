@@ -8,36 +8,57 @@ import m3u8
 
 Server = namedtuple('Server', 'server port')
 
-def discover(config):
+def discover_playlist_paths_and_create_indexes(config, destination):
+    playlists= discover(config)
+    _create_index_for_variant_playlists(playlists, destination)
+    return playlists
+
+def discover_playlists(config):
     '''
-    Returns a dictionary with format:
-
+    Get list returned by discover and converts to a dictionary with format:
     {
-        'playlist_with_mbr.m3u8': {
-            'streams': {
-                'h100.m3u8': {
-                    'servers': [Server('http://server1'), Server('http://server3')],
-                    'bandwidth': '10000'
-                },
-                'h200.m3u8': {
-                    'servers': [Server('http://server2'), Server('http://server3')],
-                    'bandwidth': '10000'
-                }
-            },
-            'needs_index': True,
+        '/h100.m3u8': {
+            [Server('http://server1'), Server('http://server3')],
         },
-
-        'playlist_without_m3u8.m3u8':{
-            'streams': {
-                'playlist_without_m3u8.m3u8': {
-                    'servers': [Server('http://server1'), Server('http://server2')],
-                    'bandwidth': '1000000'
-                }
-            },
-            'needs_index': False,
+        '/h200.m3u8': {
+            [Server('http://server2'), Server('http://server3')],
+        },
+        '/playlist_without_mbr.m3u8': {
+            [Server('http://server1'), Server('http://server2')],
         }
     }
 
+    '''
+    playlists = discover(config)
+    return _get_paths(playlists)
+
+def discover(config):
+    '''
+    Returns a list with format:
+
+    [{
+        'm3u8': playlist_with_mbr.m3u8',
+        'servers': []
+        'bitrates': [
+            {
+                'm3u8': '/h100.m3u8',
+                'servers': ['http://server1', 'http://server3'],
+                'bandwidth': '10000'
+            },
+            {
+                'm3u8': '/h200.m3u8'
+                'servers': ['http://server2', 'http://server3'],
+                'bandwidth': '20000'
+            }
+        ],
+        'needs_index': True,
+    },
+    {
+        'm3u8': 'playlist_without_mbr.m3u8',
+        'servers': ['http://server1', 'http://server2'],
+        'bitrates': []
+        'needs_index': False,
+    }]
     '''
     api_url = config.get('discover', 'api_url')
     playlists = {}
@@ -53,15 +74,6 @@ def discover(config):
             _append_m3u8_without_mbr_to(streams, info)
 
     return playlists
-
-def discover_playlist_paths_and_create_indexes(config, destination):
-    playlists= discover(config)
-    _create_index_for_variant_playlists(playlists, destination)
-    return playlists
-
-def discover_playlists(config):
-    playlists = discover(config)
-    return _get_paths(playlists)
 
 def _create_index_for_variant_playlists(playlists, destination):
     for m3u8_uri, info in playlists.items():
