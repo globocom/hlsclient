@@ -5,8 +5,8 @@ import m3u8
 from m3u8.model import Segment, Key
 
 import hlsclient.consumer
-from hlsclient.consumer import encrypt, decrypt, KeyManager
 from .fake_m3u8_server import M3U8_SERVER
+from hlsclient import crypto
 from hlsclient import helpers
 
 def test_consumer_should_download_key_file(tmpdir):
@@ -79,23 +79,20 @@ def test_variant_m3u8_consumption(tmpdir):
 
 def test_consumer_should_be_able_to_encrypt_and_decrypt_content(tmpdir):
     content = "blabla"
-    key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
-    assert content == decrypt(encrypt(content, fake_key), fake_key)
+    fake_key = crypto.get_key("fake_key.bin", str(tmpdir))
+    assert content == crypto.decrypt(crypto.encrypt(content, fake_key), fake_key)
 
 def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
-    key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
-    key_manager.save_new_key(fake_key, str(tmpdir))
+    fake_key = crypto.get_key("fake_key.bin", str(tmpdir))
+    crypto.save_new_key(fake_key, str(tmpdir))
 
     assert tmpdir.join("fake_key.bin") in tmpdir.listdir()
     assert tmpdir.join("fake_key.iv") in tmpdir.listdir()
 
 def test_save_new_key_should_create_iv_file_with_right_content(tmpdir):
-    key_manager = KeyManager()
-    fake_key = key_manager.get_key("fake_key.bin", str(tmpdir))
+    fake_key = crypto.get_key("fake_key.bin", str(tmpdir))
     fake_key.iv.iv = "rsrs"
-    key_manager.save_new_key(fake_key, str(tmpdir))
+    crypto.save_new_key(fake_key, str(tmpdir))
 
     assert 'rsrs' == tmpdir.join('fake_key.iv').read()
 
@@ -114,9 +111,8 @@ def test_consumer_should_be_able_to_encrypt_segments(tmpdir):
     assert 'URI="low.bin"' in m3u8_content
     assert "#EXT-X-VERSION:2" in m3u8_content
 
-    key_manager = KeyManager()
-    new_key = key_manager.get_key_from_disk("low.bin", str(encrypted_dir))
-    assert plain == decrypt(encrypted, new_key)
+    new_key = crypto.get_key_from_disk("low.bin", str(encrypted_dir))
+    assert plain == crypto.decrypt(encrypted, new_key)
 
 def test_consumer_should_reuse_existant_key(tmpdir):
     plain_dir = tmpdir.join('plain')
@@ -124,10 +120,9 @@ def test_consumer_should_reuse_existant_key(tmpdir):
 
     encrypted_dir = tmpdir.join('encrypted')
 
-    key_manager = KeyManager()
-    new_key = key_manager.create_key('low.bin')
+    new_key = crypto.create_key('low.bin')
     os.makedirs(str(encrypted_dir.join('live')))
-    key_manager.save_new_key(new_key, str(encrypted_dir.join('live')))
+    crypto.save_new_key(new_key, str(encrypted_dir.join('live')))
 
     hlsclient.consumer.consume(M3U8_SERVER + '/live/low.m3u8', str(encrypted_dir), True)
 
@@ -138,7 +133,7 @@ def test_consumer_should_reuse_existant_key(tmpdir):
     assert encrypted_dir.join('live').join("low.bin").check()
     assert 'URI="low.bin"' in m3u8_content
     assert "#EXT-X-VERSION:2" in m3u8_content
-    assert plain == decrypt(encrypted, new_key)
+    assert plain == crypto.decrypt(encrypted, new_key)
 
 def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
     m3u8_uri = M3U8_SERVER + '/crypto.m3u8'
@@ -155,7 +150,7 @@ def test_consumer_should_be_able_to_decrypt_segments(tmpdir):
     encrypted = encrypted_dir.join('encrypted2.ts').read()
     m3u8_content = plain_dir.join('crypto.m3u8').read()
 
-    assert plain == decrypt(encrypted, playlist.key)
+    assert plain == crypto.decrypt(encrypted, playlist.key)
     assert "#EXT-X-KEY" not in m3u8_content
 
 def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
@@ -176,9 +171,8 @@ def test_consumer_should_be_able_to_change_segments_encryption(tmpdir):
     assert new_dir.join("crypto.bin").check()
     assert 'URI="crypto.bin"' in m3u8_content
 
-    key_manager = KeyManager()
-    new_key = key_manager.get_key_from_disk("crypto.bin", str(new_dir))
-    assert decrypt(original, playlist.key) == decrypt(new, new_key)
+    new_key = crypto.get_key_from_disk("crypto.bin", str(new_dir))
+    assert crypto.decrypt(original, playlist.key) == crypto.decrypt(new, new_key)
 
 
 def test_consumer_should_save_key_on_basepath(tmpdir):
@@ -189,13 +183,6 @@ def test_consumer_should_save_key_on_basepath(tmpdir):
     assert tmpdir.join('live').join('low.bin').check()
     assert '#EXT-X-KEY:METHOD=AES-128,URI="low.bin",IV=' in m3u8_content
 
-def test_KeyManager_should_have_destination_path(monkeypatch):
-    config = helpers.load_config()
-    expected = config.get('hlsclient', 'destination')
-    key_manager = KeyManager()
-    assert expected == key_manager.destination
-
-def test_KeyManager_should_generate_proper_keyname():
-    key_manager = KeyManager()
-    key_name = key_manager.get_key_name("http://example.com/path/to/playlist.m3u8")
+def test_crypto_should_generate_proper_keyname():
+    key_name = crypto.get_key_name("http://example.com/path/to/playlist.m3u8")
     assert "playlist.bin" == key_name
