@@ -7,6 +7,27 @@ import m3u8
 
 import crypto
 
+def consume_from_balancer(balancer, destination, encrypt):
+    '''
+    Consume all active playlist resources from ``balancer`` and
+    report status to it.
+
+    '''
+    for playlist_resource in balancer.actives:
+        try:
+            m3u8_uri = str(playlist_resource)
+            modified = consume(m3u8_uri, destination, encrypt)
+        except (HTTPError, IOError, OSError) as err:
+            logging.warning(u'Notifying error for resource %s: %s' % (playlist_resource, err))
+            balancer.notify_error(playlist_resource.server, playlist_resource.path)
+        else:
+            if modified:
+                logging.info('Notifying content modified: %s' % playlist_resource)
+                balancer.notify_modified(playlist_resource.server, playlist_resource.path)
+            else:
+                logging.debug('Content not modified: %s' % playlist_resource)
+
+
 def consume(m3u8_uri, destination_path, encrypt=False):
     '''
     Given a ``m3u8_uri``, downloads all files to disk
