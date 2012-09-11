@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import urllib
 import urlparse
 from collections import namedtuple
@@ -9,9 +10,11 @@ import m3u8
 Server = namedtuple('Server', 'server port')
 
 def discover_playlist_paths_and_create_indexes(config, destination):
-    playlists= discover(config)
+    playlists = discover(config)
     _create_index_for_variant_playlists(playlists, destination)
-    return playlists
+    paths = _get_paths(playlists)
+    logging.info(u'Discovered the following paths: %s' % paths.items())
+    return paths
 
 def discover_playlists(config):
     '''

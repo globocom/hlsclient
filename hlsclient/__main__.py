@@ -13,6 +13,25 @@ from discover import discover_playlist_paths_and_create_indexes
 from cleaner import clean
 
 
+def consume_from_balancer(balancer, destination, encrypt):
+    for playlist_resource in balancer.actives:
+        try:
+            modified = consume_resource_from_balancer(playlist_resource, destination, encrypt)
+        except (HTTPError, IOError, OSError) as err:
+            logging.warning(u'Notifying error for resource %s: %s' % (playlist_resource, err))
+            balancer.notify_error(playlist_resource.server, playlist_resource.path)
+        else:
+            if modified:
+                logging.info('Notifying content modified: %s' % playlist_resource)
+                balancer.notify_modified(playlist_resource.server, playlist_resource.path)
+            else:
+                logging.debug('Content not modified: %s' % playlist_resource)
+
+def consume_resource_from_balancer(playlist_resource, destination, encrypt):
+    playlist_path = str(playlist_resource)
+    logging.debug('Consuming %s' % playlist_path)
+    return consume(playlist_path, destination, encrypt)
+
 def main():
     config = helpers.load_config()
     helpers.setup_logging(config)
@@ -30,25 +49,8 @@ def main():
     while True:
         try:
             paths = discover_playlist_paths_and_create_indexes(config, destination)
-
-            logging.info(u'Discovered the following paths: %s' % paths.items())
-
             balancer.update(paths)
-
-            for resource in balancer.actives:
-                resource_path = str(resource)
-                logging.debug('Consuming %s' % resource_path)
-                try:
-                    modified = consume(resource_path, destination, encrypt)
-                except (HTTPError, IOError, OSError) as err:
-                    logging.warning(u'Notifying error for resource %s: %s' % (resource_path, err))
-                    balancer.notify_error(resource.server, resource.path)
-                else:
-                    if modified:
-                        logging.info('Notifying content modified: %s' % resource)
-                        balancer.notify_modified(resource.server, resource.path)
-                    else:
-                        logging.debug('Content not modified: %s' % resource)
+            consume_from_balancer(balancer, destination, encrypt)
             clean(destination, clean_maxage, ignores)
         except Exception as e:
             logging.exception('An unknown error happened')

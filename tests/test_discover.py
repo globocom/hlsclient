@@ -70,9 +70,8 @@ api_url = {host}/variant.json
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(variant_config))
 
-    hlsclient.discover.discover_playlist_paths_and_create_indexes(config, str(tmpdir))
+    paths = hlsclient.discover.discover_playlist_paths_and_create_indexes(config, str(tmpdir))
 
     filepath = str(tmpdir.join('hls-with-mbr.m3u8'))
-
     assert os.path.exists(filepath)
     assert VARIANT_PLAYLIST == open(filepath).read()
