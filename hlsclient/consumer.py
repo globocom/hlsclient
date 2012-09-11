@@ -18,6 +18,7 @@ def consume(m3u8_uri, destination_path, encrypt=False):
         If True, a new key is created
 
     '''
+    logging.debug('Consuming %s' % m3u8_uri)
     playlist = m3u8.load(m3u8_uri)
 
     if playlist.is_variant:

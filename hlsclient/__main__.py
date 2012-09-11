@@ -16,7 +16,8 @@ from cleaner import clean
 def consume_from_balancer(balancer, destination, encrypt):
     for playlist_resource in balancer.actives:
         try:
-            modified = consume_resource_from_balancer(playlist_resource, destination, encrypt)
+            m3u8_uri = str(playlist_resource)
+            modified = consume(m3u8_uri, destination, encrypt)
         except (HTTPError, IOError, OSError) as err:
             logging.warning(u'Notifying error for resource %s: %s' % (playlist_resource, err))
             balancer.notify_error(playlist_resource.server, playlist_resource.path)
@@ -26,11 +27,6 @@ def consume_from_balancer(balancer, destination, encrypt):
                 balancer.notify_modified(playlist_resource.server, playlist_resource.path)
             else:
                 logging.debug('Content not modified: %s' % playlist_resource)
-
-def consume_resource_from_balancer(playlist_resource, destination, encrypt):
-    playlist_path = str(playlist_resource)
-    logging.debug('Consuming %s' % playlist_path)
-    return consume(playlist_path, destination, encrypt)
 
 def main():
     config = helpers.load_config()
