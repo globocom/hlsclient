@@ -1,7 +1,5 @@
-import hashlib
 import logging
 import time
-import csv
 
 import helpers
 
