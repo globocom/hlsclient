@@ -1,8 +1,9 @@
 from bottle import route, run, response
 import bottle
 
-
-M3U8_SERVER = 'http://localhost:8845'
+M3U8_HOST = 'http://localhost'
+M3U8_PORT= '8845'
+M3U8_SERVER = "%s:%s" % (M3U8_HOST, M3U8_PORT)
 
 VARIANT_PLAYLIST = '''\
 #EXTM3U

@@ -5,8 +5,6 @@ import csv
 
 import helpers
 
-from urllib2 import HTTPError
-
 from balancer import Balancer
 from consumer import consume_from_balancer
 from discover import discover_playlist_paths_and_create_indexes
