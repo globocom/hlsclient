@@ -2,6 +2,7 @@ import errno
 import os
 import logging
 import urllib2
+import httplib
 import urlparse
 import m3u8
 
@@ -17,7 +18,7 @@ def consume_from_balancer(balancer, destination, encrypt=False):
         try:
             m3u8_uri = str(playlist_resource)
             modified = consume(m3u8_uri, destination, encrypt)
-        except (urllib2.HTTPError, IOError, OSError) as err:
+        except (httplib.HTTPException, urllib2.HTTPError, IOError, OSError) as err:
             logging.warning(u'Notifying error for resource %s: %s' % (playlist_resource, err))
             balancer.notify_error(playlist_resource.server, playlist_resource.path)
         else:
