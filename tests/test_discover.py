@@ -13,7 +13,7 @@ api_url = http://localhost:4422/tests.m3u8
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(sample_config))
 
-    def fake_get_info_from_url(url):
+    def fake_get_streams_from_url(url):
         # m3u8 sample got from http://webme.ws/live-docs/thorp.html
         return [{
             'm3u8': '/hls-without-mbr.m3u8',
@@ -22,7 +22,7 @@ api_url = http://localhost:4422/tests.m3u8
             'needs_index': False,
         }]
 
-    monkeypatch.setattr(hlsclient.discover, '_get_info_from_url', fake_get_info_from_url)
+    monkeypatch.setattr(hlsclient.discover, '_get_streams_from_url', fake_get_streams_from_url)
     paths = hlsclient.discover.discover_playlists(config)
 
     playlist = '/hls-without-mbr.m3u8'
@@ -36,7 +36,7 @@ api_url = http://localhost:4422/mbr-tests.m3u8
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(sample_config))
 
-    def fake_get_info_from_url(url):
+    def fake_get_streams_from_url(url):
         # m3u8 sample got from http://webme.ws/live-docs/thorp.html
         return [{
             'm3u8': '/hls-with-mbr.m3u8',
@@ -49,7 +49,7 @@ api_url = http://localhost:4422/mbr-tests.m3u8
             'needs_index': True,
         }]
 
-    monkeypatch.setattr(hlsclient.discover, '_get_info_from_url', fake_get_info_from_url)
+    monkeypatch.setattr(hlsclient.discover, '_get_streams_from_url', fake_get_streams_from_url)
     paths = hlsclient.discover.discover_playlists(config)
 
     low_playlist = '/hls100.m3u8'
@@ -70,9 +70,8 @@ api_url = {host}/variant.json
     config = ConfigParser.RawConfigParser()
     config.readfp(io.BytesIO(variant_config))
 
-    hlsclient.discover.discover_playlist_paths_and_create_indexes(config, str(tmpdir))
+    paths = hlsclient.discover.discover_playlist_paths_and_create_indexes(config, str(tmpdir))
 
     filepath = str(tmpdir.join('hls-with-mbr.m3u8'))
-
     assert os.path.exists(filepath)
     assert VARIANT_PLAYLIST == open(filepath).read()

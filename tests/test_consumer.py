@@ -1,14 +1,17 @@
 from collections import namedtuple
-import urllib
-import os
-import m3u8
-import StringIO
 from m3u8.model import Segment, Key
+import logging
+import m3u8
+import os
+import urllib
+import StringIO
 
 import hlsclient.consumer
-from .fake_m3u8_server import M3U8_SERVER
+from .fake_m3u8_server import M3U8_SERVER, M3U8_HOST, M3U8_PORT
 from hlsclient import crypto
 from hlsclient import helpers
+from hlsclient.balancer import Balancer
+from hlsclient.discover import Server
 
 def test_consumer_should_download_key_file(tmpdir):
     hlsclient.consumer.consume(M3U8_SERVER + '/crypto.m3u8', str(tmpdir))
@@ -203,3 +206,44 @@ def test_consumer_should_save_key_on_basepath(tmpdir):
 def test_crypto_should_generate_proper_keyname():
     key_name = crypto.get_key_name("http://example.com/path/to/playlist.m3u8")
     assert "playlist.bin" == key_name
+
+# CONSUME FROM BALANCER TESTS
+
+def test_consume_from_balancer_should_report_content_modified(tmpdir):
+    server = Server(M3U8_HOST, M3U8_PORT)
+    url = '/low.m3u8'
+
+    modified = []
+    b = Balancer()
+    b.update({url: [server]})
+    b.notify_modified = lambda server, url: modified.append([server, url])
+    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+
+    assert modified == [[server, url]]
+
+def test_consume_from_balancer_should_not_report_content_modified_if_there_are_no_changes(tmpdir):
+    server = Server(M3U8_HOST, M3U8_PORT)
+    url = '/low.m3u8'
+
+    b = Balancer()
+    b.update({url: [server]})
+    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+
+    modified = []
+    b.notify_modified = lambda server, url: modified.append([server, url])
+    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+
+    assert modified == []
+
+def test_consume_from_balancer_should_report_error(tmpdir, monkeypatch):
+    server = Server('invalid host', M3U8_PORT)
+    url = '/low.m3u8'
+
+    errors = []
+    b = Balancer()
+    b.update({url: [server]})
+    b.notify_error = lambda server, url: errors.append([server, url])
+    monkeypatch.setattr(logging, 'warning', lambda warn: 0) # just to hide hlsclient warning
+    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+
+    assert errors == [[server, url]]
