@@ -34,4 +34,11 @@ Running
 
 To run the client, simply run:
 
-    python -m hlsclient
+    $ python -m hlsclient
+
+Running tests
+-------------
+
+We use py.test for testing.
+
+    $ py.test

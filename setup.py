@@ -19,5 +19,6 @@ setup(
     install_requires=[
         'm3u8>=0.1.1',
         'pycrypto>=2.5',
+        'sh>=1.03'
         ],
 )
