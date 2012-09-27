@@ -22,7 +22,7 @@ The JSON must be something like:
             {
                 m3u8: "/msfc/Edge.m3u8",
                 servers: [
-                "liveips.nasa.gov.edgesuite.net"
+                    "http://liveips.nasa.gov.edgesuite.net"
                 ],
                 bitrates: [],
                 needs_index: false
