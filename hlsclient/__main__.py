@@ -5,7 +5,8 @@ import helpers
 
 from balancer import Balancer
 from consumer import consume_from_balancer
-from discover import discover_playlist_paths_and_create_indexes
+from discover import discover_playlists, get_paths
+from combine import combine_playlists
 from cleaner import clean
 
 
@@ -25,7 +26,9 @@ def main():
 
     while True:
         try:
-            paths = discover_playlist_paths_and_create_indexes(config, destination)
+            playlists = discover_playlists(config)
+            combine_playlists(playlists, destination)
+            paths = get_paths(playlists)
             balancer.update(paths)
             consume_from_balancer(balancer, destination, encrypt)
             clean(destination, clean_maxage, ignores)

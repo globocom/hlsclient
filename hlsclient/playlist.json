@@ -1,0 +1,22 @@
+
+{
+	"streams": {
+		"Edge": {
+			"path": "/msfc/Edge.m3u8",
+			"servers": ["http://liveips.nasa.gov.edgesuite.net"],
+			"bitrate": 200,
+		},
+		"Wifi": {
+			"path": "/msfc/Wifi.m3u8",
+			"servers": ["http://liveips.nasa.gov.edgesuite.net"],
+			"bitrate": 1000,
+		}
+	},
+	"actions": [
+		{"type": "combine", "streams": ["Edge", "Wifi"], "path": "/msfc/Nasa.m3u8"},
+		{"type": "transcode", "input": "Edge", "output": [
+			{"media": "audio", "audio-bitrate": 100},
+			{"media": "video", "video-bitrate": 200, "width": 100, "height": 200},
+		]}
+	]
+}

@@ -1,1 +1,1 @@
-include README.md LICENSE config.ini
+include README.rst LICENSE config.ini

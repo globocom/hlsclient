@@ -18,14 +18,50 @@ The JSON must be something like:
 ::
 
     {
-        actives: [
-            {
-                m3u8: "/msfc/Edge.m3u8",
+        "streams": [
+            "nasa": {
+                "input-path": "/msfc/Edge.m3u8",
                 servers: [
                     "http://liveips.nasa.gov.edgesuite.net"
-                ],
-                bitrates: [],
-                needs_index: false
+                ]
+            }
+        ]
+    }
+
+
+Variant Playlist Generation
+---------------------------
+
+``hlslcient`` can consume multiple playlists and generate a variant playlists grouping then.
+
+To do so, include a ``bandwidth`` for each stream and add an action to combine them in the JSON:
+
+::
+
+    {
+        "streams": {
+            "Nasa-low": {
+                "input-path": "/msfc/Edge.m3u8",
+                "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+                "bandwidth": 254082
+            },
+            "Nasa-medium": {
+                "input-path": "/msfc/3G.m3u8",
+                "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+                "bandwidth": 460658
+            },
+            "Nasa-high": {
+                "input-path": "/msfc/Wifi.m3u8",
+                "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+                "bandwidth": 1080434
+            }
+        },
+
+        "actions": [
+            {
+                "type": "combine",
+                "input": ["Nasa-low", "Nasa-medium", "Nasa-high"],
+                "output": "/msfc/nasa_mbr.m3u8"
             }
         ]
     }
