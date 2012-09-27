@@ -30,6 +30,14 @@ The JSON must be something like:
         ]
     }
 
+
+Encryption
+----------
+
+If you set ``encryption=true`` in the config file, ``hlsclient`` will
+automatically encrypt all streams with a random AES-128 cipher.
+
+
 Running
 -------
 
