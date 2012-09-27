@@ -5,6 +5,7 @@ import urllib2
 import httplib
 import urlparse
 import m3u8
+import shutil
 
 import crypto
 
@@ -137,13 +138,12 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
         logging.debug("Downloading {url}".format(url=uri))
-        request = urllib2.urlopen(url=uri)
-        raw = request.read()
+        raw = urllib2.urlopen(url=uri)
         if new_key is not False:
-            plain = crypto.decrypt(raw, current_key) if current_key else raw
-            raw = crypto.encrypt(plain, new_key) if new_key else plain
+            plain = crypto.Decrypt(raw, current_key) if current_key else raw
+            raw = crypto.Encrypt(plain, new_key) if new_key else plain
         with open(filename, 'wb') as f:
-            f.write(raw)
+            shutil.copyfileobj(raw, f)
         return filename
     else:
         # change modification time so the file is not removed by hlsclient.cleaner.clean

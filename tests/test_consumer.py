@@ -4,6 +4,7 @@ import logging
 import m3u8
 import os
 import urllib
+import StringIO
 
 import hlsclient.consumer
 from .fake_m3u8_server import M3U8_SERVER, M3U8_HOST, M3U8_PORT
@@ -84,6 +85,22 @@ def test_consumer_should_be_able_to_encrypt_and_decrypt_content(tmpdir):
     content = "blabla"
     fake_key = crypto.get_key("fake_key.bin", str(tmpdir))
     assert content == crypto.decrypt(crypto.encrypt(content, fake_key), fake_key)
+
+    # Generate some big data and try it out
+    bigcontent = content * 2 * 1024 + content
+    bigcontent = '0123456789abcdef'
+
+    contentf = StringIO.StringIO(bigcontent)
+    encryptf = crypto.Encrypt(contentf, fake_key)
+    decryptf = crypto.Decrypt(encryptf, fake_key)
+
+    decrypted = ''
+    data = decryptf.read(1024)
+    while data:
+        decrypted += data
+        data = decryptf.read(1024)
+
+    assert bigcontent == decrypted
 
 def test_key_generated_by_consumer_should_be_saved_on_right_path(tmpdir):
     fake_key = crypto.get_key("fake_key.bin", str(tmpdir))

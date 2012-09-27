@@ -1,5 +1,7 @@
 from Crypto.Cipher import AES
+import math
 import os
+import StringIO
 
 import helpers
 import m3u8
@@ -79,3 +81,120 @@ def decrypt(data, key):
     plain = decryptor.decrypt(data)
 
     return encoder.decode(plain)
+
+def adjust_size(x, base=16):
+    y = int(base * math.floor(float(x)/base))
+    return base if y == 0 else y
+
+class Encrypt(object, StringIO.StringIO):
+    '''
+    A helper class which can be used for encrypting data in chunks
+
+    Parameters:
+
+     `dataf`
+       A file object which contains the content to be encrypted
+
+     `key`
+       The key object to be used for encryption
+    '''
+    def __init__(self, dataf, key):
+        self.encryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
+        self.dataf = dataf
+        self.size = 0
+        self.padded = False
+        self.pblock = None
+        super(Encrypt, self).__init__()
+
+    def get_padding(self):
+        '''
+        Returns the padding that has to be added to the data. If the padding
+        is already added, it responds with an empty string
+        '''
+        if self.padded:
+            return ''
+
+        self.padded = True
+        encoder = PKCS7Encoder()
+        padding = encoder.get_padding(self.size)
+        self.size += len(padding)
+        return padding
+
+    def read(self, size):
+        '''
+        Reads a maximum of 'size' bytes from the input file, encrypts it
+        and returns it. This function takes care of ensuring that the 16byte
+        boundary is maintained for encryption
+        '''
+
+        # Adjust the size to a 16 byte boundary
+        size = adjust_size(size)
+
+        # Make a record of the first chunk. Required for adding a padding
+        # at the end of the file
+        if self.pblock is None:
+            self.pblock = self.dataf.read(size)
+            self.size += len(self.pblock)
+
+        # Read another chunk and check if end of file has reached
+        data = self.dataf.read(size)
+        self.size += len(data)
+
+        if not data:
+            # Time to add padding
+            data = self.pblock + self.get_padding()
+            self.pblock = ''
+        else:
+            # Send the previous chunk back to the user and keep this
+            # chunk for next cycle
+            pdata = self.pblock
+            self.pblock = data
+            data = pdata
+
+        if data:
+            data = self.encryptor.encrypt(data)
+
+        return data
+
+class Decrypt(object, StringIO.StringIO):
+    '''
+    A helper class which can be used for decrypting data in chunks
+
+    Parameters:
+
+     `dataf`
+       A file object which contains the content to be decrypted
+
+     `key`
+       The key object to be used for decryption
+    '''
+    def __init__(self, dataf, key):
+        self.decryptor = AES.new(key.key_value, AES.MODE_CBC, get_key_iv(key))
+        self.dataf = dataf
+        self.pblock = None
+        super(Decrypt, self).__init__()
+
+    def read(self, size):
+        '''
+        Reads a maximum of 'size' bytes from the input file, decrypts it
+        and returns it. This function takes care of ensuring that the 16byte
+        boundary is maintained for decryption
+        '''
+
+        size = adjust_size(size)
+
+        # Make a record of the first chunk
+        if self.pblock is None:
+            self.pblock = self.dataf.read(size)
+        elif not self.pblock:
+            return self.pblock
+
+        # Read the next chunk
+        plain = self.decryptor.decrypt(self.pblock)
+        self.pblock = self.dataf.read(size)
+
+        if not self.pblock:
+            encoder = PKCS7Encoder()
+            plain = encoder.decode(plain)
+
+        return plain
