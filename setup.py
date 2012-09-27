@@ -1,7 +1,7 @@
 from os.path import dirname, abspath, join
 from setuptools import setup
 
-with open(abspath(join(dirname(__file__), 'README.md'))) as fileobj:
+with open(abspath(join(dirname(__file__), 'README.rst'))) as fileobj:
     README = fileobj.read().strip()
 
 setup(
