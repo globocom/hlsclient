@@ -16,18 +16,21 @@ def consume_from_balancer(balancer, destination, encrypt=False):
 
     '''
     for playlist_resource in balancer.actives:
+        m3u8_uri = "{server}:{port}{path}".format(
+            server=playlist_resource.server.server,
+            port=playlist_resource.server.port,
+            path=playlist_resource.path)
         try:
-            m3u8_uri = str(playlist_resource)
             modified = consume(m3u8_uri, destination, encrypt)
         except (httplib.HTTPException, urllib2.HTTPError, IOError, OSError) as err:
-            logging.warning(u'Notifying error for resource %s: %s' % (playlist_resource, err))
+            logging.warning(u'Notifying error for resource %s: %s' % (m3u8_uri, err))
             balancer.notify_error(playlist_resource.server, playlist_resource.path)
         else:
             if modified:
-                logging.info('Notifying content modified: %s' % playlist_resource)
+                logging.info('Notifying content modified: %s' % m3u8_uri)
                 balancer.notify_modified(playlist_resource.server, playlist_resource.path)
             else:
-                logging.debug('Content not modified: %s' % playlist_resource)
+                logging.debug('Content not modified: %s' % m3u8_uri)
 
 
 def consume(m3u8_uri, destination_path, encrypt=False):

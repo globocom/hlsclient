@@ -1,6 +1,9 @@
 from collections import deque
 import datetime
 
+from collections import namedtuple
+PlaylistResource = namedtuple('PlaylistResource', ['server', 'path'])
+
 class Balancer(object):
     '''
     Controls which server is active for a playlist (m3u8)
@@ -82,19 +85,3 @@ class Balancer(object):
         # The only reason for this to be a method
         # is that it's easier to monkey patch it
         return datetime.datetime.now()
-
-
-class PlaylistResource(object):
-    
-    def __init__(self, server, path):
-        self.server = server
-        self.path = path
-
-    def __str__(self):
-        return '{server}:{port}{path}'.format(
-            server=self.server.server,
-            port=self.server.port,
-            path=self.path)
-
-    def __unicode__(self):
-        return str(self)

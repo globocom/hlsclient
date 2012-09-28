@@ -81,6 +81,8 @@ def test_variant_m3u8_consumption(tmpdir):
     for fname in expected_downloaded:
         assert M3U8_SERVER not in open(str(tmpdir.join(fname))).read()
 
+# CRYPTO tests
+
 def test_consumer_should_be_able_to_encrypt_and_decrypt_content(tmpdir):
     content = "blabla"
     fake_key = crypto.get_key("fake_key.bin", str(tmpdir))
