@@ -13,6 +13,19 @@ VARIANT_PLAYLIST = '''\
 /high.m3u8
 '''.format(server=M3U8_SERVER)
 
+TRANSCODED_PLAYLIST = '''\
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=65000
+Nasa-audio-only.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=750000
+Nasa-very-low.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=254082
+/msfc/Edge.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=460658
+/msfc/3G.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=1080434
+/msfc/Wifi.m3u8
+'''.format(server=M3U8_SERVER)
 
 @route('/variant.json')
 def variant_json():
@@ -28,6 +41,61 @@ def variant_json():
 }
 '''
 
+@route('/transcode.json')
+def transcode_json():
+    return '''\
+{
+    "streams": {
+        "Nasa-low": {
+            "input-path": "/msfc/Edge.m3u8",
+            "output-path": "/nasa/Edge.m3u8",
+            "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+            "bandwidth": 254082
+        },
+        "Nasa-medium": {
+            "input-path": "/msfc/3G.m3u8",
+            "output-path": "/nasa/3G.m3u8",
+            "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+            "bandwidth": 460658
+        },
+        "Nasa-high": {
+            "input-path": "/msfc/Wifi.m3u8",
+            "output-path": "/nasa/Wifi.m3u8",
+            "servers": ["http://liveips.nasa.gov.edgesuite.net"],
+            "bandwidth": 1080434
+        }
+    },
+
+    "actions": [
+        {
+            "type": "combine",
+            "input": ["Nasa-audio-only", "Nasa-very-low", "Nasa-low", "Nasa-medium", "Nasa-high"],
+            "output": "/nasa/nasa_mbr.m3u8"
+        },
+        {
+            "type": "transcode",
+            "input": "Nasa-high",
+            "output": {
+                "audio": {
+                    "Nasa-audio-only": {
+                        "path": "Nasa-audio-only.m3u8",
+                        "audio-bitrate": 64000,
+                        "bandwidth": 65000
+                    }
+                },
+                "video": {
+                    "Nasa-very-low": {
+                        "path": "Nasa-very-low.m3u8",
+                        "audio-bitrate": 640000,
+                        "video-bitrate": 100000,
+                        "bandwidth": 750000
+                    }
+                }
+            }
+        }
+    ]
+}
+'''
 
 @route('/variant-playlist.m3u8')
 def variant_playlist():
