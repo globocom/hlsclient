@@ -53,11 +53,12 @@ def consume(m3u8_uri, destination_path, encrypt=False):
         return consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt)
 
 def consume_variant_playlist(playlist, m3u8_uri, destination_path, encrypt=False):
+    changed = False
     full_path = build_full_path(destination_path, m3u8_uri)
     for p in playlist.playlists:
-        consume(p.absolute_uri, destination_path, encrypt)
+        changed |= bool(consume(p.absolute_uri, destination_path, encrypt))
     save_m3u8(playlist, m3u8_uri, full_path)
-    return True
+    return changed
 
 def consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt=False):
     full_path = build_full_path(destination_path, m3u8_uri)
