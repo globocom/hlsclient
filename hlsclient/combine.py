@@ -4,10 +4,12 @@ import m3u8
 
 def combine_playlists(playlists, path):
     streams = playlists['streams']
-    actions = playlists.get('actions', {})
-    combine_actions = [action for action in actions if action['type'] == 'combine']
-    for action in combine_actions:
+    for action in combine_actions(playlists):
         dump_variant_playlist(playlists, action, path)
+
+def combine_actions(playlists):
+    actions = playlists.get('actions', {})
+    return [action for action in actions if action['type'] == 'combine']
 
 def dump_variant_playlist(playlists, action, path):
     m3u8 = generate_variant_playlist(playlists, action)
