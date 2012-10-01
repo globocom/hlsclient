@@ -105,8 +105,11 @@ def ensure_directory_exists(directory):
             raise
 
 def download_segments(playlist, destination_path, new_key):
+    from multiprocessing import Pool
+    pool = Pool(processes=4)
     segments = [segment.absolute_uri for segment in playlist.segments]
-    return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
+    arguments = [(uri, destination_path, playlist.key, new_key) for uri in segments]
+    return pool.map(download_to_file_from_args, arguments)
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     '''
@@ -134,6 +137,9 @@ def download_key(playlist, destination_path, new_key):
         with open(filename, 'rb') as f:
             playlist.key.key_value = f.read()
         return True
+
+def download_to_file_from_args(args):
+    return download_to_file(*args)
 
 def download_to_file(uri, destination_path, current_key=None, new_key=False):
     '''
