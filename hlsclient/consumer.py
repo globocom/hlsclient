@@ -109,7 +109,9 @@ def download_segments(playlist, destination_path, new_key):
     pool = Pool(processes=4)
     segments = [segment.absolute_uri for segment in playlist.segments]
     arguments = [(uri, destination_path, playlist.key, new_key) for uri in segments]
-    return pool.map(download_to_file_from_args, arguments)
+    results = pool.map(download_to_file_from_args, arguments)
+    pool.close()
+    return results
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     '''
