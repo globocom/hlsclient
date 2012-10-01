@@ -75,7 +75,7 @@ def consume_single_playlist(playlist, m3u8_uri, destination_path, encrypt=False)
     m3u8_has_changed = downloaded_key or any(downloaded_segments)
     if m3u8_has_changed:
         save_m3u8(playlist, m3u8_uri, full_path, new_key)
-        return downloaded_segments
+        return filter(None, downloaded_segments)
 
     return False
 
