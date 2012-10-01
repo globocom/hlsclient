@@ -4,7 +4,7 @@ import os
 from sh import ffmpeg
 
 # FIXME: not tested
-# FIXME: transcode video
+# FIXME: transcode video too (we support audio only)
 def transcode_segments(playlists, modified_playlist, segments, m3u8_path):
     for action in playlists.get('actions', {}):
         if action['type'] == 'transcode' and action['input'] == modified_playlist:
@@ -13,7 +13,7 @@ def transcode_segments(playlists, modified_playlist, segments, m3u8_path):
                 create_transcoded_audio_m3u8(m3u8_path, new_audio_stream)
 
 # FIXME: not tested
-# FIXME: should not treat (read/dump) m3u8 as strings
+# FIXME: should not handle (read/dump) m3u8 as strings
 # FIXME: should pass bitrate to transcode function
 def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream):
     content = open(original_m3u8_path, 'r').read()
@@ -22,6 +22,8 @@ def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream):
     with open(new_m3u8_path, 'w') as f:
         f.write(new_content)
 
+# FIXME: not tested
+# FIXME: use specified bitrate
 def extract_audio_from_segments(segments):
     for segment in segments:
         output_path = segment.replace('.ts', '.aac')
