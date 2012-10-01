@@ -9,7 +9,7 @@ import shutil
 
 import crypto
 
-def consume_from_balancer(balancer, destination, encrypt=False):
+def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     '''
     Consume all active playlist resources from ``balancer`` and
     report status to it.
@@ -19,16 +19,16 @@ def consume_from_balancer(balancer, destination, encrypt=False):
         m3u8_uri = "{server}:{port}{path}".format(
             server=playlist_resource.server.server,
             port=playlist_resource.server.port,
-            path=playlist_resource.path)
+            path=playlists['streams'][playlist_resource.key]['input-path'])
         try:
             modified = consume(m3u8_uri, destination, encrypt)
         except (httplib.HTTPException, urllib2.HTTPError, IOError, OSError) as err:
             logging.warning(u'Notifying error for resource %s: %s' % (m3u8_uri, err))
-            balancer.notify_error(playlist_resource.server, playlist_resource.path)
+            balancer.notify_error(playlist_resource.server, playlist_resource.key)
         else:
             if modified:
                 logging.info('Notifying content modified: %s' % m3u8_uri)
-                balancer.notify_modified(playlist_resource.server, playlist_resource.path)
+                balancer.notify_modified(playlist_resource.server, playlist_resource.key)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
 

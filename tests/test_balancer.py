@@ -12,7 +12,7 @@ def test_balancer_returns_active_server_if_its_the_only_one():
 	b.update(paths)
 	active_playlists = list(b.actives)
 	assert 1 == len(active_playlists)
-	assert PATH == active_playlists[0].path
+	assert PATH == active_playlists[0].key
 	assert SERVER == active_playlists[0].server
 
 def test_balancer_supports_multiple_paths():
@@ -22,7 +22,7 @@ def test_balancer_supports_multiple_paths():
 	paths = {PATH1: [SERVER], PATH2: [SERVER]}
 	b = Balancer()
 	b.update(paths)
-	paths = sorted(s.path for s in b.actives)
+	paths = sorted(s.key for s in b.actives)
 	assert 2 == len(paths)
 	assert PATH1 == paths[0]
 	assert PATH2 == paths[1]
@@ -90,7 +90,7 @@ def test_active_server_does_not_change_if_new_servers_added():
 	new_servers = ['http://server3', 'http://server4', 'http://server2']
 	b.update({PATH: new_servers})
 	assert [SERVERS[1]] == [s.server for s in b.actives]
-	assert set(new_servers) == set(b.paths[PATH])
+	assert set(new_servers) == set(b.keys[PATH])
 
 def test_paths_can_be_removed():
 	PATH = '/path'

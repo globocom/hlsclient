@@ -5,7 +5,7 @@ import helpers
 
 from balancer import Balancer
 from consumer import consume_from_balancer
-from discover import discover_playlists, get_paths
+from discover import discover_playlists, get_servers
 from combine import combine_playlists
 from cleaner import clean
 
@@ -28,9 +28,9 @@ def main():
         try:
             playlists = discover_playlists(config)
             combine_playlists(playlists, destination)
-            paths = get_paths(playlists)
+            paths = get_servers(playlists)
             balancer.update(paths)
-            consume_from_balancer(balancer, destination, encrypt)
+            consume_from_balancer(balancer, playlists, destination, encrypt)
             clean(destination, clean_maxage, ignores)
         except Exception as e:
             logging.exception('An unknown error happened')

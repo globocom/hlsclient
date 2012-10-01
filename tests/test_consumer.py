@@ -11,7 +11,7 @@ from .fake_m3u8_server import M3U8_SERVER, M3U8_HOST, M3U8_PORT
 from hlsclient import crypto
 from hlsclient import helpers
 from hlsclient.balancer import Balancer
-from hlsclient.discover import Server
+from hlsclient.discover import Server, get_servers
 
 def test_consumer_should_download_key_file(tmpdir):
     hlsclient.consumer.consume(M3U8_SERVER + '/crypto.m3u8', str(tmpdir))
@@ -221,39 +221,44 @@ def test_crypto_should_generate_proper_keyname():
 
 def test_consume_from_balancer_should_report_content_modified(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
-    url = '/low.m3u8'
+    playlist = 'low'
+    uri = '/low.m3u8'
+    playlists = {'streams': {playlist: {'input-path': uri, 'servers': [server]}}}
 
     modified = []
     b = Balancer()
-    b.update({url: [server]})
-    b.notify_modified = lambda server, url: modified.append([server, url])
-    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+    b.update(get_servers(playlists))
+    b.notify_modified = lambda server, playlist: modified.append([server, playlist])
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
-    assert modified == [[server, url]]
+    assert modified == [[server, playlist]]
 
 def test_consume_from_balancer_should_not_report_content_modified_if_there_are_no_changes(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
-    url = '/low.m3u8'
+    playlist = 'low'
+    uri = '/low.m3u8'
+    playlists = {'streams': {playlist: {'input-path': uri, 'servers': [server]}}}
 
     b = Balancer()
-    b.update({url: [server]})
-    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+    b.update(get_servers(playlists))
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
     modified = []
-    b.notify_modified = lambda server, url: modified.append([server, url])
-    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
-
+    b.notify_modified = lambda server, playlist: modified.append([server, playlist])
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
     assert modified == []
 
 def test_consume_from_balancer_should_report_error(tmpdir, monkeypatch):
     server = Server('invalid host', M3U8_PORT)
-    url = '/low.m3u8'
+    playlist = 'low'
+    uri = '/low.m3u8'
+    playlists = {'streams': {playlist: {'input-path': uri, 'servers': [server]}}}
 
     errors = []
     b = Balancer()
-    b.update({url: [server]})
-    b.notify_error = lambda server, url: errors.append([server, url])
+    b.update(get_servers(playlists))
+    b.notify_error = lambda server, playlist: errors.append([server, playlist])
     monkeypatch.setattr(logging, 'warning', lambda warn: 0) # just to hide hlsclient warning
-    hlsclient.consumer.consume_from_balancer(b, str(tmpdir))
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
-    assert errors == [[server, url]]
+    assert errors == [[server, playlist]]

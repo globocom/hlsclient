@@ -2,7 +2,7 @@ from collections import deque
 import datetime
 
 from collections import namedtuple
-PlaylistResource = namedtuple('PlaylistResource', ['server', 'path'])
+PlaylistResource = namedtuple('PlaylistResource', ['server', 'key'])
 
 class Balancer(object):
     '''
@@ -11,69 +11,69 @@ class Balancer(object):
     NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
     def __init__(self):
-        self.paths = {}
+        self.keys = {}
         self.modified_at = {}
 
-    def update(self, paths):
+    def update(self, keys):
         '''
-        ``paths`` is a dict returned from ``discover.discover()``
+        ``keys`` is a dict returned from ``discover.discover()``
         '''
-        self._clean_removed_paths(paths)
-        for path, servers in paths.items():
-            self._update_path(path, servers)
+        self._clean_removed_keys(keys)
+        for key, servers in keys.items():
+            self._update_key(key, servers)
 
-    def notify_modified(self, server, path):
+    def notify_modified(self, server, key):
         '''
         Remembers that a given server returned a new playlist
         '''
-        self.modified_at[path] = self._now()
+        self.modified_at[key] = self._now()
 
-    def notify_error(self, server, path):
+    def notify_error(self, server, key):
         '''
         Remembers that a given server failed.
-        This immediately changes the active server for this path, is another one exists.
+        This immediately changes the active server for this key, is another one exists.
         '''
-        if self._active_server_for_path(path) == server:
-            self._change_active_server(path)
+        if self._active_server_for_key(key) == server:
+            self._change_active_server(key)
 
     @property
     def actives(self):
         '''
         Returns a list of ``PlaylistResource``s
         '''
-        for path in self.paths:
-            active_server = self._active_server_for_path(path)
-            if self._outdated(active_server, path):
-                self._change_active_server(path)
-                active_server = self._active_server_for_path(path)
-            yield PlaylistResource(active_server, path)
+        for key in self.keys:
+            active_server = self._active_server_for_key(key)
+            if self._outdated(active_server, key):
+                self._change_active_server(key)
+                active_server = self._active_server_for_key(key)
+            yield PlaylistResource(active_server, key)
 
-    def _clean_removed_paths(self, new_paths):
-        removed_paths = set(self.paths.keys()).difference(new_paths.keys())
-        for path in removed_paths:
-            del self.modified_at[path]
-            del self.paths[path]
+    def _clean_removed_keys(self, new_keys):
+        removed_keys = set(self.keys.keys()).difference(new_keys.keys())
+        for key in removed_keys:
+            del self.modified_at[key]
+            del self.keys[key]
 
-    def _update_path(self, path, servers):
-        active = self._active_server_for_path(path)
+    def _update_key(self, key, servers):
+        active = self._active_server_for_key(key)
         if active in servers:
-            self.paths[path] = deque([active])
-            self.paths[path].extend([server for server in servers if server != active])
+            self.keys[key] = deque([active])
+            self.keys[key].extend([server for server in servers if server != active])
         else:
-            self.paths[path] = deque(servers)
-            self.modified_at[path] = None
+            self.keys[key] = deque(servers)
+            self.modified_at[key] = None
 
-    def _active_server_for_path(self, path):
-        servers = self.paths.get(path, [])
+    def _active_server_for_key(self, key):
+        servers = self.keys.get(key, [])
         if servers:
             return servers[0]
 
-    def _change_active_server(self, path):
-        self.paths[path].rotate(-1)
-        self.modified_at[path] = None
+    def _change_active_server(self, key):
+        self.keys[key].rotate(-1)
+        self.modified_at[key] = None
 
-    def _outdated(self, server, path):
-        last_change = self.modified_at.get(path, None)
+    def _outdated(self, server, key):
+        last_change = self.modified_at.get(key, None)
         if not last_change:
             # This server is new, so it can't be obsolete
             return False

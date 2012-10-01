@@ -80,7 +80,7 @@ api_url = http://localhost:4422/mbr-tests.m3u8
     assert expected_result == paths
 
 
-def test_get_paths_from_playlists():
+def test_get_servers_from_playlists():
     playlists = {"streams": {"hls100": {'input-path': '/hls100.m3u8', 'servers': ['A', 'B']}}}
-    paths = hlsclient.discover.get_paths(playlists)
-    assert {'/hls100.m3u8': ['A', 'B']} == paths
+    paths = hlsclient.discover.get_servers(playlists)
+    assert {'hls100': ['A', 'B']} == paths

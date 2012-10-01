@@ -9,9 +9,9 @@ import m3u8
 
 Server = namedtuple('Server', 'server port')
 
-def get_paths(playlists):
-    return dict([(s['input-path'], s['servers']) for s in playlists['streams'].values()])
-
+def get_servers(playlists):
+    return dict([(playlist_name, playlist_data['servers']) for
+        playlist_name, playlist_data in playlists['streams'].items()])
 
 def discover_playlists(config):
     '''
