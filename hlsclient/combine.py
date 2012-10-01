@@ -1,3 +1,4 @@
+from copy import copy
 import os
 
 import m3u8
@@ -12,7 +13,7 @@ def get_playlists_data(playlists):
     '''Creates a dict of playlists with their data.
     Valid playlists are those that we are consuming and
     those that we are creating by transcode.'''
-    data = playlists['streams']
+    data = copy(playlists['streams'])
     for action in get_actions(playlists, 'transcode'):
         for output_type in ['audio', 'video']:
             data.update(action['output'].get(output_type, {}))
