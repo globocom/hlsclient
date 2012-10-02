@@ -1,7 +1,7 @@
 import logging
 import os
 
-from sh import ffmpeg
+import sh
 
 # FIXME: not tested
 # FIXME: transcode video too (we support audio only)
@@ -49,4 +49,4 @@ def transcode(src, output):
         else:
             raise NotImplementedError("Unsupported type")
     logging.debug('Calling FFMPEG with args={args}'.format(args=' '.join(map(str, args))))
-    ffmpeg(args)
+    sh.ffmpeg(args)
