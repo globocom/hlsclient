@@ -1,14 +1,26 @@
-from sh import mediainfo
+from xml.dom.minidom import parseString
+import sh
+
 from hlsclient.transcode import transcode
+
+
+def get_media_info(path):
+    info = sh.mediainfo(str(path), "--Output=XML")
+    return parseString(str(info))
+
+def get_xml_tag_text_value(node, tag):
+    return node.getElementsByTagName(tag)[0].firstChild.data
 
 def test_extracts_audio_from_ts(tmpdir):
     output_path = tmpdir.join("output.aac")
     transcode(src="tests/data/sample.ts", output=[{"path": str(output_path), "type": "audio"}])
     assert output_path.check()
 
-    info = mediainfo(str(output_path))
-    assert 'Audio Data Transport Stream' in info
-    assert 'Advanced Audio Codec' in info
+    info = get_media_info(str(output_path))
+
+    file_track, audio_track = info.getElementsByTagName("track")
+    assert 'Audio Data Transport Stream' == get_xml_tag_text_value(file_track, "Format_Info")
+    assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
 
 def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
@@ -18,13 +30,13 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
         {"path": str(audio_output_path), "type": "audio"}
     ])
 
-    assert audio_output_path.check()
-    assert video_output_path.check()
+    audio_info = get_media_info(str(audio_output_path))
+    file_track, audio_track = audio_info.getElementsByTagName("track")
+    assert 'Audio Data Transport Stream' == get_xml_tag_text_value(file_track, "Format_Info")
+    assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
 
-    audio_info = mediainfo(str(audio_output_path))
-    assert 'Audio Data Transport Stream' in audio_info
-    assert 'Advanced Audio Codec' in audio_info
-
-    video_info = mediainfo(str(video_output_path))
-    assert 'MPEG-TS' in video_info
-    assert 'Advanced Video Codec' in video_info
+    video_info = get_media_info(str(video_output_path))
+    file_track, video_track, audio_track, _ = video_info.getElementsByTagName("track")
+    assert 'MPEG-TS' == get_xml_tag_text_value(file_track, "Format")
+    assert 'Advanced Video Codec' == get_xml_tag_text_value(video_track, "Format_Info")
+    assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
