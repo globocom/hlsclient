@@ -29,7 +29,8 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
         {"path": str(video_output_path),
          "type": "video",
          "video-bitrate": 100000,
-         "path": video_output_path},
+         "size": "32x24",
+         },
         {"path": str(audio_output_path), "type": "audio"}
     ])
 
@@ -43,5 +44,7 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     assert 'MPEG-TS' == get_xml_tag_text_value(file_track, "Format")
     assert 'Advanced Video Codec' == get_xml_tag_text_value(video_track, "Format_Info")
     assert '100.0 Kbps' == get_xml_tag_text_value(video_track, "Nominal_bit_rate")
+    assert '32 pixels' == get_xml_tag_text_value(video_track, "Width")
+    assert '24 pixels' == get_xml_tag_text_value(video_track, "Height")
     assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
 
