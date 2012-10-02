@@ -42,9 +42,10 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     video_info = get_media_info(str(video_output_path))
     file_track, video_track, audio_track, _ = video_info.getElementsByTagName("track")
     assert 'MPEG-TS' == get_xml_tag_text_value(file_track, "Format")
+
     assert 'Advanced Video Codec' == get_xml_tag_text_value(video_track, "Format_Info")
     assert '100.0 Kbps' == get_xml_tag_text_value(video_track, "Nominal_bit_rate")
     assert '32 pixels' == get_xml_tag_text_value(video_track, "Width")
     assert '24 pixels' == get_xml_tag_text_value(video_track, "Height")
+    assert 'High@L3.0' == get_xml_tag_text_value(video_track, "Format_profile")
     assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
-
