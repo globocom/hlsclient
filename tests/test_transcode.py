@@ -26,7 +26,10 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
     video_output_path = tmpdir.join("tvglobo_200.ts")
     transcode(src="tests/data/sample.ts", output=[
-        {"path": str(video_output_path), "type": "video", "bitrate": 100, "video-bitrate": 100000, "path": video_output_path},
+        {"path": str(video_output_path),
+         "type": "video",
+         "video-bitrate": 100000,
+         "path": video_output_path},
         {"path": str(audio_output_path), "type": "audio"}
     ])
 

@@ -41,9 +41,8 @@ def transcode(src, output):
             args += ["-b:a", output_file.get("audio-bitrate", 192000)]
             args += [output_file["path"]]
         elif output_file["type"] == "video":
-            args += ["-b:v", output_file["bitrate"] * 1000]
+            args += ["-b:v", output_file.get("video-bitrate", 200000)]
             args += DEFAULT_VIDEO_ARGS
-            args += ["-bt", output_file.get("video-bitrate", "200k")]
             args += [output_file["path"]]
         else:
             raise NotImplementedError("Unsupported type")
