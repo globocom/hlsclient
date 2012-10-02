@@ -217,7 +217,7 @@ def test_crypto_should_generate_proper_keyname():
     key_name = crypto.get_key_name("http://example.com/path/to/playlist.m3u8")
     assert "playlist.bin" == key_name
 
-# CONSUME FROM BALANCER TESTS
+# INTEGRATION TESTS: CONSUME FROM BALANCER
 
 def test_consume_from_balancer_should_report_content_modified(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
@@ -230,8 +230,11 @@ def test_consume_from_balancer_should_report_content_modified(tmpdir):
     b.update(get_servers(playlists))
     b.notify_modified = lambda server, playlist: modified.append([server, playlist])
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
-
     assert modified == [[server, playlist]]
+
+    expected_created = ['low.m3u8', 'low1.ts', 'low2.ts']
+    resources_created = os.listdir(str(tmpdir))
+    assert sorted(expected_created) == sorted(resources_created)
 
 def test_consume_from_balancer_should_not_report_content_modified_if_there_are_no_changes(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
@@ -262,3 +265,26 @@ def test_consume_from_balancer_should_report_error(tmpdir, monkeypatch):
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
     assert errors == [[server, playlist]]
+
+def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
+    server = Server(M3U8_HOST, M3U8_PORT)
+    playlist = 'real'
+    uri = '/real_content.m3u8'
+    playlists = {'streams': {playlist: {'input-path': uri, 'servers': [server]}},
+                 'actions': [{'type': 'transcode',
+                              'input': playlist,
+                              'output': {'audio': {
+                                            "transcode": {
+                                                "path": "transcode.m3u8",
+                                                "audio-bitrate": 64000,
+                                                "bandwidth": 65000
+                                            }
+                              }}}]}
+
+    b = Balancer()
+    b.update(get_servers(playlists))
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
+
+    expected_created = ['real_content.m3u8', 'sample.ts', 'transcode.m3u8', 'sample.aac']
+    resources_created = os.listdir(str(tmpdir))
+    assert sorted(expected_created) == sorted(resources_created)

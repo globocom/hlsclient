@@ -1,4 +1,4 @@
-from bottle import route, run, response
+from bottle import route, run, response, static_file
 import bottle
 
 M3U8_HOST = 'http://localhost'
@@ -161,6 +161,20 @@ def missing_chunks_playlist():
 #EXT-X-ENDLIST
 '''.format(server=M3U8_SERVER)
 
+@route('/real_content.m3u8')
+def real_content_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    return '''\
+#EXTM3U
+#EXT-X-TARGETDURATION:8
+#EXTINF:8,
+{server}/data/sample.ts
+#EXT-X-ENDLIST
+'''.format(server=M3U8_SERVER)
+
+@route('/data/<path:path>')
+def serve_static_file(path):
+    return static_file(path, root='tests/data')
 
 @route('/key.bin')
 def key():
