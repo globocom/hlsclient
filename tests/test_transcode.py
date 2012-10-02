@@ -3,7 +3,7 @@ from hlsclient.transcode import transcode
 
 def test_extracts_audio_from_ts(tmpdir):
     output_path = tmpdir.join("output.aac")
-    transcode(src="tests/data/tvglobo.ts", output=[{"path": str(output_path), "type": "audio"}])
+    transcode(src="tests/data/sample.ts", output=[{"path": str(output_path), "type": "audio"}])
     assert output_path.check()
 
     info = mediainfo(str(output_path))
@@ -13,7 +13,7 @@ def test_extracts_audio_from_ts(tmpdir):
 def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
     video_output_path = tmpdir.join("tvglobo_200.ts")
-    transcode(src="tests/data/tvglobo.ts", output=[
+    transcode(src="tests/data/sample.ts", output=[
         {"path": str(video_output_path), "type": "video", "bitrate": 200, "path": video_output_path},
         {"path": str(audio_output_path), "type": "audio"}
     ])
