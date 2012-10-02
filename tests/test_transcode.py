@@ -26,7 +26,7 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
     video_output_path = tmpdir.join("tvglobo_200.ts")
     transcode(src="tests/data/sample.ts", output=[
-        {"path": str(video_output_path), "type": "video", "bitrate": 200, "path": video_output_path},
+        {"path": str(video_output_path), "type": "video", "bitrate": 100, "video-bitrate": 100000, "path": video_output_path},
         {"path": str(audio_output_path), "type": "audio"}
     ])
 
@@ -39,4 +39,6 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     file_track, video_track, audio_track, _ = video_info.getElementsByTagName("track")
     assert 'MPEG-TS' == get_xml_tag_text_value(file_track, "Format")
     assert 'Advanced Video Codec' == get_xml_tag_text_value(video_track, "Format_Info")
+    assert '100.0 Kbps' == get_xml_tag_text_value(video_track, "Nominal_bit_rate")
     assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")
+

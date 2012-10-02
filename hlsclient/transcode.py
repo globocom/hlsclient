@@ -1,34 +1,35 @@
+from copy import copy
 import logging
 import os
 
 import sh
 
-# FIXME: not tested
-# FIXME: transcode video too (we support audio only)
+DEFAULT_VIDEO_ARGS = "-f mpegts -acodec libfaac -ar 48000 -ab 64k -vcodec libx264 -flags +loop -cmp +chroma -subq 5 -trellis 1 -refs 1 -coder 0 -me_range 16 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -maxrate 96k -bufsize 96k -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -level 30 -aspect 320:240 -g 30 -s 320x240".split(' ')
+
 def transcode_segments(playlists, modified_playlist, segments, m3u8_path):
     for action in playlists.get('actions', {}):
         if action['type'] == 'transcode' and action['input'] == modified_playlist:
-            for new_audio_stream in action['output'].get('audio', {}).values():
-                extract_audio_from_segments(segments)
-                create_transcoded_audio_m3u8(m3u8_path, new_audio_stream)
+            # FIXME: transcode to video too (we support audio only)
+            # FIXME: we should create all transcoded outputs from one segment in one pass
+            for new_audio_stream_options in action['output'].get('audio', {}).values():
+                extract_audio_from_segments(segments, new_audio_stream_options)
+                create_transcoded_audio_m3u8(m3u8_path, new_audio_stream_options)
 
-# FIXME: not tested
-# FIXME: should not handle (read/dump) m3u8 as strings
-# FIXME: should pass bitrate to transcode function
-def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream):
+def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream_options):
+    # FIXME: should not handle (read/dump) m3u8 as strings
     content = open(original_m3u8_path, 'r').read()
     new_content = content.replace('.ts', '.aac')
-    new_m3u8_path = os.path.join(os.path.dirname(original_m3u8_path), new_audio_stream['path'])
+    new_m3u8_path = os.path.join(os.path.dirname(original_m3u8_path), new_audio_stream_options['path'])
     with open(new_m3u8_path, 'w') as f:
         f.write(new_content)
 
-# FIXME: not tested
-# FIXME: use specified bitrate
-def extract_audio_from_segments(segments):
+def extract_audio_from_segments(segments, new_audio_stream_options):
     for segment in segments:
         output_path = segment.replace('.ts', '.aac')
         logging.info('transcoding from {segment} to {path}'.format(segment=segment, path=output_path))
-        transcode(segment, output=[{"path": output_path, "type": "audio"}])
+        options = copy(new_audio_stream_options)
+        options.update({"path": output_path, "type": "audio"})
+        transcode(segment, output=[options])
 
 def transcode(src, output):
     args = ["-y"]
@@ -37,14 +38,12 @@ def transcode(src, output):
     for output_file in output:
         if output_file["type"] == "audio":
             args += ["-vn"]
-            args += ["-ar", 44100]
-            args += ["-acodec", "copy"]
-            args += ["-ac", 2]
-            args += ["-ab", 192000]
+            args += ["-b:a", output_file.get("audio-bitrate", 192000)]
             args += [output_file["path"]]
         elif output_file["type"] == "video":
             args += ["-b:v", output_file["bitrate"] * 1000]
-            args += "-f mpegts -acodec libfaac -ar 48000 -ab 64k -vcodec libx264 -flags +loop -cmp +chroma -subq 5 -trellis 1 -refs 1 -coder 0 -me_range 16 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -bt 200k -maxrate 96k -bufsize 96k -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -level 30 -aspect 320:240 -g 30 -s 320x240".split(' ')
+            args += DEFAULT_VIDEO_ARGS
+            args += ["-bt", output_file.get("video-bitrate", "200k")]
             args += [output_file["path"]]
         else:
             raise NotImplementedError("Unsupported type")
