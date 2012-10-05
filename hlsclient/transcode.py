@@ -17,7 +17,6 @@ def transcode_segments(playlists, modified_playlist, segments, m3u8_path):
                 create_transcoded_audio_m3u8(m3u8_path, new_audio_stream_options)
 
 def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream_options):
-    # FIXME: should not handle (read/dump) m3u8 as strings
     playlist = m3u8.load(original_m3u8_path)
     for segment in playlist.segments:
         segment.uri = segment.uri.replace('.ts', '.aac')
