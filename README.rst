@@ -10,7 +10,7 @@ It also supports backups, i.e., if the same playlist is available on
 more than one server, it will track each server status and will switch
 to the backup if needed.
 
-Through the ``config.ini`` it’s possible to customize where the files
+Through the ``config.ini`` it's possible to customize where the files
 will be saved and what is the URL that provides servers info via JSON.
 
 The JSON must be something like:
