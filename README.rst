@@ -67,6 +67,37 @@ To do so, include a ``bandwidth`` for each stream and add an action to combine t
     }
 
 
+Transcoding
+-----------
+
+``hlsclient`` is also able to create an audio only track from a video stream using FFMPEG.
+
+To do so, add a ``transcode`` action an include the new stream on a combine action:
+
+::
+
+    "actions": [
+        {
+            "type": "combine",
+            "input": ["Nasa-audio-only", "Nasa-low", "Nasa-medium", "Nasa-high"],
+            "output": "/msfc/nasa_mbr.m3u8"
+        },
+        {
+            "type": "transcode",
+            "input": "Nasa-low",
+            "output": {
+                "audio": {
+                    "Nasa-audio-only": {
+                        "path": "Nasa-audio-only.m3u8",
+                        "audio-bitrate": 64000,
+                        "bitrate": 65000
+                    }
+                }
+            }
+        }
+    ]
+
+
 Encryption
 ----------
 
