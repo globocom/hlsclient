@@ -9,7 +9,7 @@ import shutil
 
 import crypto
 
-from hlsclient.transcode import transcode_segments
+from hlsclient.transcode import transcode_playlist
 
 def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     '''
@@ -32,7 +32,7 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
                 logging.info('Notifying content modified: %s' % m3u8_uri)
                 balancer.notify_modified(playlist_resource.server, playlist_resource.key)
                 m3u8_path = os.path.join(build_full_path(destination, m3u8_uri), os.path.basename(m3u8_uri))
-                transcode_segments(playlists, playlist_resource.key, modified, m3u8_path)
+                transcode_playlist(playlists, playlist_resource.key, modified, m3u8_path)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
 
