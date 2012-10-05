@@ -2,6 +2,7 @@ from copy import copy
 import logging
 import os
 
+import m3u8
 import sh
 
 DEFAULT_VIDEO_ARGS = "-f mpegts -acodec libfaac -ar 48000 -ab 64k -vcodec libx264 -flags +loop -cmp +chroma -subq 5 -trellis 1 -refs 1 -coder 0 -me_range 16 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -maxrate 96k -bufsize 96k -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -level 30 -g 30".split(' ')
@@ -17,11 +18,11 @@ def transcode_segments(playlists, modified_playlist, segments, m3u8_path):
 
 def create_transcoded_audio_m3u8(original_m3u8_path, new_audio_stream_options):
     # FIXME: should not handle (read/dump) m3u8 as strings
-    content = open(original_m3u8_path, 'r').read()
-    new_content = content.replace('.ts', '.aac')
+    playlist = m3u8.load(original_m3u8_path)
+    for segment in playlist.segments:
+        segment.uri = segment.uri.replace('.ts', '.aac')
     new_m3u8_path = os.path.join(os.path.dirname(original_m3u8_path), new_audio_stream_options['path'])
-    with open(new_m3u8_path, 'w') as f:
-        f.write(new_content)
+    playlist.dump(new_m3u8_path)
 
 def extract_audio_from_segments(segments, new_audio_stream_options):
     for segment in segments:

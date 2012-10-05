@@ -288,3 +288,7 @@ def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
     expected_created = ['real_content.m3u8', 'sample.ts', 'transcode.m3u8', 'sample.aac']
     resources_created = os.listdir(str(tmpdir))
     assert sorted(expected_created) == sorted(resources_created)
+
+    original_m3u8 = tmpdir.join('real_content.m3u8').read()
+    expected_audio_m3u8 = original_m3u8.replace('.ts', '.aac')
+    assert expected_audio_m3u8 == tmpdir.join('transcode.m3u8').read()
