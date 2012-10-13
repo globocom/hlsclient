@@ -147,7 +147,7 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
     filename = os.path.join(destination_path, os.path.basename(uri))
     if not os.path.exists(filename):
         logging.debug("Downloading {url}".format(url=uri))
-        raw = urllib2.urlopen(url=uri)
+        raw = urllib2.urlopen(url=uri, timeout=30)
         if new_key is not False:
             plain = crypto.Decrypt(raw, current_key) if current_key else raw
             raw = crypto.Encrypt(plain, new_key) if new_key else plain

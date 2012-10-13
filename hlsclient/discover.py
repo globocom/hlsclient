@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-import urllib
+import urllib2
 import urlparse
 from collections import namedtuple
 
@@ -35,7 +35,7 @@ def discover_playlists(config):
 
 def _get_streams_from_url(url):
     # FIXME: implement error checking
-    return json.load(urllib.urlopen(url))
+    return json.load(urllib2.urlopen(url, timeout=30))
 
 def _url_to_server(server):
     parsed_url = urlparse.urlparse(server)
