@@ -8,6 +8,7 @@ import m3u8
 import shutil
 
 import crypto
+from futures import ThreadPoolExecutor
 
 from hlsclient.transcode import transcode_playlist
 
@@ -17,7 +18,7 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     report status to it.
 
     '''
-    for playlist_resource in balancer.actives:
+    def consume_resource(playlist_resource):
         m3u8_uri = "{server}:{port}{path}".format(
             server=playlist_resource.server.server,
             port=playlist_resource.server.port,
@@ -35,7 +36,8 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
                 transcode_playlist(playlists, playlist_resource.key, modified, m3u8_path)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
-
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        list(executor.map(consume_resource, balancer.actives))
 
 def consume(m3u8_uri, destination_path, encrypt=False):
     '''
@@ -109,8 +111,12 @@ def ensure_directory_exists(directory):
             raise
 
 def download_segments(playlist, destination_path, new_key):
-    segments = [segment.absolute_uri for segment in playlist.segments]
-    return [download_to_file(uri, destination_path, playlist.key, new_key) for uri in segments]
+    uris = [segment.absolute_uri for segment in playlist.segments]
+    def download(uri):
+        return download_to_file(uri, destination_path, playlist.key, new_key)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        downloads = executor.map(download, uris)
+        return list(downloads)
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     '''
