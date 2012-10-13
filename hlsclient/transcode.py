@@ -55,10 +55,12 @@ def transcode(src, output):
     for output_file in output:
         if output_file["type"] == "audio":
             args += ["-vn"]
-            args += ["-b:a", output_file.get("audio-bitrate", 192000)]
+            if "audio-bitrate" in output_file:
+                args += ["-b:a", output_file["audio-bitrate"]]
             args += [output_file["path"]]
         elif output_file["type"] == "video":
-            args += ["-b:v", output_file.get("video-bitrate", 200000)]
+            if "video-bitrate" in output_file:
+                args += ["-b:v", output_file["video-bitrate"]]
             args += ["-s", output_file.get("size", "320x240")]
             args += DEFAULT_VIDEO_ARGS
             args += [output_file["path"]]
