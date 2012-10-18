@@ -50,7 +50,7 @@ def new_chunk_path(path, output_stream):
 
 def transcode(src, output):
     args = ["-y"]
-    args += ["-threads", len(output)]
+    args += ["-threads", len(output) * 4]
     args += ["-i", src]
     for output_file in output:
         if output_file["type"] == "audio":
