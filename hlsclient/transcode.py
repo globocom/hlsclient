@@ -55,6 +55,7 @@ def transcode(src, output):
     for output_file in output:
         if output_file["type"] == "audio":
             args += ["-vn"]
+            args += ["-acodec", "copy"]
             if "audio-bitrate" in output_file:
                 args += ["-b:a", output_file["audio-bitrate"]]
             args += [output_file["path"]]
