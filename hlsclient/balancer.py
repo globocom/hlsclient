@@ -1,5 +1,6 @@
 from collections import deque
 import datetime
+import logging
 
 from collections import namedtuple
 PlaylistResource = namedtuple('PlaylistResource', ['server', 'key'])
@@ -10,7 +11,9 @@ class Balancer(object):
     '''
     NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
-    def __init__(self):
+    def __init__(self, not_modified_tolerance=None):
+        if not_modified_tolerance:
+            self.NOT_MODIFIED_TOLERANCE = not_modified_tolerance
         self.keys = {}
         self.modified_at = {}
 
@@ -44,6 +47,7 @@ class Balancer(object):
         for key in self.keys:
             active_server = self._active_server_for_key(key)
             if self._outdated(active_server, key):
+                logging.warning("{server} outdated for stream {key}".format(server=active_server, key=key))
                 self._change_active_server(key)
                 active_server = self._active_server_for_key(key)
             yield PlaylistResource(active_server, key)

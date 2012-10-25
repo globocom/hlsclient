@@ -16,13 +16,14 @@ def main():
 
     logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
-    clean_maxage = int(config.get('hlsclient', 'clean_maxage'))
+    clean_maxage = config.getint('hlsclient', 'clean_maxage')
+    not_modified_tolerance = config.getint('hlsclient', 'not_modified_tolerance')
     encrypt = config.getboolean('hlsclient', 'encrypt')
 
     # ignore all comma separated wildcard names for `clean` call
     ignores = helpers.get_ignore_patterns(config)
 
-    balancer = Balancer()
+    balancer = Balancer(not_modified_tolerance)
 
     while True:
         try:
