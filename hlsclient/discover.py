@@ -35,7 +35,8 @@ def discover_playlists(config):
 
 def _get_streams_from_url(url):
     # FIXME: implement error checking
-    return json.load(urllib2.urlopen(url, timeout=30))
+    timeout = 30 # FIXME: too long & magic number
+    return json.load(urllib2.urlopen(url, timeout=timeout))
 
 def _url_to_server(server):
     parsed_url = urlparse.urlparse(server)
