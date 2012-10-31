@@ -12,6 +12,9 @@ from futures import ThreadPoolExecutor
 
 from hlsclient.transcode import transcode_playlist
 
+NUM_THREAD_WORKERS = 4
+
+
 def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     '''
     Consume all active playlist resources from ``balancer`` and
@@ -36,7 +39,7 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
                 transcode_playlist(playlists, playlist_resource.key, modified, m3u8_path)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
         list(executor.map(consume_resource, balancer.actives))
 
 def consume(m3u8_uri, destination_path, encrypt=False):
@@ -114,7 +117,7 @@ def download_segments(playlist, destination_path, new_key):
     uris = [segment.absolute_uri for segment in playlist.segments]
     def download(uri):
         return download_to_file(uri, destination_path, playlist.key, new_key)
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
         downloads = executor.map(download, uris)
         return list(downloads)
 
