@@ -124,3 +124,30 @@ We use py.test for testing.
     $ py.test
 
 .. _HTTP Live Streaming Client: https://developer.apple.com/resources/http-streaming/
+
+
+FFmpeg Installation
+-------------------
+
+In order to use the current version of hlsclient with transcoding support,
+you must have ffmpeg installed with libaac and libx264. Download them and
+compile FFfmpeg like this:
+
+* `libaac`::
+
+  ./configure && make && sudo make install
+
+* `libx264`::
+
+  ./configure --enable-shared && make && sudo make install
+
+* `FFmpeg`::
+
+  ./configure --enable-libx264 --enable-gpl --enable-libfaac --enable-nonfree --enable-shared && make && sudo make install
+
+
+The tested versions were:
+
+* `libaac`: faac-1.28
+* `libx264`: x264-snapshot-20121030-2245
+* `FFmpeg`: N-46213-g976175f
