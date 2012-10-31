@@ -13,7 +13,7 @@ from futures import ThreadPoolExecutor
 from hlsclient.transcode import transcode_playlist
 
 NUM_THREAD_WORKERS = 4
-DOWNLOAD_TIMEOUT = 30
+DOWNLOAD_TIMEOUT = 30 # FIXME: isn't it too big?
 
 
 def consume_from_balancer(balancer, playlists, destination, encrypt=False):
