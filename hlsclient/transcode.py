@@ -3,7 +3,7 @@ import logging
 import os
 
 import m3u8
-import sh
+from subprocess import Popen
 
 DEFAULT_VIDEO_ARGS = "-f mpegts -acodec libfaac -ar 48000 -ab 64k -vcodec libx264 -flags +loop -cmp +chroma -subq 5 -trellis 1 -refs 1 -coder 0 -me_range 16 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -maxrate 96k -bufsize 96k -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -level 30 -g 30".split(' ')
 
@@ -49,8 +49,10 @@ def new_chunk_path(path, output_stream):
     return path.replace('.ts', '.aac')
 
 def transcode(src, output):
-    args = ["-y"]
-    args += ["-threads", len(output) * 4]
+    args = ["ffmpeg"]
+    args += ["-y"]
+    args += ["-loglevel", "quiet"]
+    args += ["-threads", str(len(output) * 4)]
     args += ["-i", src]
     for output_file in output:
         if output_file["type"] == "audio":
@@ -67,5 +69,7 @@ def transcode(src, output):
             args += [output_file["path"]]
         else:
             raise NotImplementedError("Unsupported type")
+
     logging.debug('Calling FFMPEG with args={args}'.format(args=' '.join(map(str, args))))
-    sh.ffmpeg(args)
+
+    Popen(args).communicate()

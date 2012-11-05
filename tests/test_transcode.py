@@ -1,12 +1,12 @@
 from xml.dom.minidom import parseString
-import sh
+from subprocess import Popen, PIPE
 
 from hlsclient.transcode import transcode
 
 
 def get_media_info(path):
-    info = sh.mediainfo(str(path), "--Output=XML")
-    return parseString(str(info))
+    result = Popen(["mediainfo", str(path), "--Output=XML"], stdout=PIPE).communicate()
+    return parseString(str(result[0]))
 
 def get_xml_tag_text_value(node, tag):
     return node.getElementsByTagName(tag)[0].firstChild.data
@@ -14,6 +14,7 @@ def get_xml_tag_text_value(node, tag):
 def test_extracts_audio_from_ts(tmpdir):
     output_path = tmpdir.join("output.aac")
     transcode(src="tests/data/sample.ts", output=[{"path": str(output_path), "type": "audio"}])
+
     assert output_path.check()
 
     info = get_media_info(str(output_path))
@@ -25,14 +26,19 @@ def test_extracts_audio_from_ts(tmpdir):
 def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
     video_output_path = tmpdir.join("tvglobo_200.ts")
+
     transcode(src="tests/data/sample.ts", output=[
         {"path": str(video_output_path),
          "type": "video",
-         "video-bitrate": 100000,
+         "video-bitrate": "100000",
          "size": "32x24",
          },
-        {"path": str(audio_output_path), "type": "audio"}
+        {"path": str(audio_output_path),
+         "type": "audio"}
     ])
+
+    assert audio_output_path.check()
+    assert video_output_path.check()
 
     audio_info = get_media_info(str(audio_output_path))
     file_track, audio_track = audio_info.getElementsByTagName("track")

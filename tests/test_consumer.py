@@ -276,8 +276,8 @@ def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
                               'output': {'audio': {
                                             "transcode": {
                                                 "path": "transcode.m3u8",
-                                                "audio-bitrate": 64000,
-                                                "bandwidth": 65000
+                                                "audio-bitrate": "64000",
+                                                "bandwidth": "65000"
                                             }
                               }}}]}
 
