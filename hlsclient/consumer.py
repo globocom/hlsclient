@@ -11,10 +11,11 @@ import crypto
 from futures import ThreadPoolExecutor
 
 from hlsclient.transcode import transcode_playlist
+from hlsclient import helpers
 
-NUM_THREAD_WORKERS = 4
-DOWNLOAD_TIMEOUT = 30 # FIXME: isn't it too big?
-
+config = helpers.load_config()
+NUM_THREAD_WORKERS = config.getint('hlsclient', 'num_thread_workers')
+DOWNLOAD_TIMEOUT = config.getint('hlsclient', 'download_timeout')
 
 def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     '''
