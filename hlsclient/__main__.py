@@ -1,6 +1,9 @@
 import logging
 import time
 
+from lockfile import LockTimeout
+from lock import ExpiringLinkLockFile
+
 import helpers
 
 from balancer import Balancer
@@ -22,21 +25,35 @@ def main():
 
     # ignore all comma separated wildcard names for `clean` call
     ignores = helpers.get_ignore_patterns(config)
-
     balancer = Balancer(not_modified_tolerance)
+
+    lock_path = config.get('lock', 'path')
+    lock_timeout = config.getint('lock', 'timeout')
+    lock_expiration = config.getint('lock', 'expiration')
+    lock = ExpiringLinkLockFile(lock_path)
 
     while True:
         try:
-            playlists = discover_playlists(config)
-            combine_playlists(playlists, destination)
-            paths = get_servers(playlists)
-            balancer.update(paths)
-            consume_from_balancer(balancer, playlists, destination, encrypt)
-            clean(destination, clean_maxage, ignores)
+            if lock.i_am_locking():
+                lock.update_lock()
+                playlists = discover_playlists(config)
+                combine_playlists(playlists, destination)
+                paths = get_servers(playlists)
+                balancer.update(paths)
+                consume_from_balancer(balancer, playlists, destination, encrypt)
+                clean(destination, clean_maxage, ignores)
+            elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
+                logging.warning("Lock expired. Breaking it.")
+                lock.break_lock()
+            else:
+                lock.acquire(timeout=lock_timeout)
+        except LockTimeout:
+            logging.debug("Unable to acquire lock")
         except Exception as e:
             logging.exception('An unknown error happened')
         except KeyboardInterrupt:
             logging.debug('Quitting...')
+            lock.release()
             return
         time.sleep(0.1)
 

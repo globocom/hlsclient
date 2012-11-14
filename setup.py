@@ -20,5 +20,6 @@ setup(
         'futures==2.1.3',
         'm3u8>=0.1.1',
         'pycrypto>=2.5',
+        'lockfile>=0.9.1',
         ],
 )
