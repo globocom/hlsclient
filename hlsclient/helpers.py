@@ -13,11 +13,13 @@ def load_config(path=None):
     return config
 
 def setup_logging(config):
-    level = getattr(logging, config.get('hlsclient', 'log_level'))
+    level = getattr(logging, config.get('log', 'level'))
     format = '%(asctime)s - %(levelname)s - %(message)s'
     try:
-        filename = config.get('hlsclient', 'log_filename')
+        filename = config.get('log', 'filename')
         handler = TimedRotatingFileHandler(filename, when='midnight', encoding='utf-8', interval=1)
+        if config.has_option('log', 'suffix'):
+            handler.suffix = config.get('log', 'suffix')
     except ConfigParser.NoOptionError:
         handler = logging.StreamHandler()
 
