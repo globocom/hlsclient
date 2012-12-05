@@ -35,11 +35,14 @@ def test_consumer_should_return_false_if_there_is_no_new_file_for_variant_playli
     assert False == hlsclient.consumer.consume(M3U8_SERVER + '/variant-playlist.m3u8', str(tmpdir))
 
 def test_consumer_should_do_nothing_if_file_already_exists(tmpdir):
-    # We we try to get these chunks from the server, it will fail
-    # since they don't exist. Since we create fake ones, hlsclient
-    # will not try to download them.
-    tmpdir.join('/missing1.ts').write('CHUNK')
-    tmpdir.join('/missing2.ts').write('CHUNK')
+    tmpdir.join('/low1.ts').write('FAKE CHUNK')
+    tmpdir.join('/low2.ts').write('FAKE CHUNK')
+    assert False == bool(hlsclient.consumer.consume(M3U8_SERVER + '/low.m3u8', str(tmpdir)))
+    # We assert that the fake content was not modified since the files already exist
+    assert tmpdir.join('/low1.ts').read() == 'FAKE CHUNK'
+    assert tmpdir.join('/low2.ts').read() == 'FAKE CHUNK'
+
+def test_consumer_ignore_404_errors(tmpdir):
     assert False == bool(hlsclient.consumer.consume(M3U8_SERVER + '/missing_chunks.m3u8', str(tmpdir)))
 
 def test_consumer_should_create_intermediate_directories(tmpdir):

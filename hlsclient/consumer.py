@@ -117,8 +117,16 @@ def ensure_directory_exists(directory):
 
 def download_segments(playlist, destination_path, new_key):
     uris = [segment.absolute_uri for segment in playlist.segments]
+
     def download(uri):
-        return download_to_file(uri, destination_path, playlist.key, new_key)
+        try:
+            return download_to_file(uri, destination_path, playlist.key, new_key)
+        except urllib2.HTTPError as err:
+            if err.code == 404:
+                # We ignore 404 errors for chunks
+                return None
+            raise
+
     with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
         downloads = executor.map(download, uris)
         return list(downloads)
