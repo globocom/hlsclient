@@ -123,7 +123,7 @@ def download_segments(playlist, destination_path, new_key):
             return download_to_file(uri, destination_path, playlist.key, new_key)
         except urllib2.HTTPError as err:
             if err.code == 404:
-                # We ignore 404 errors for chunks
+                logging.warning(u'Got 404 trying to download %s' % (uri,))
                 return None
             raise
 
