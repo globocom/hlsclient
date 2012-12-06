@@ -6,6 +6,7 @@ import httplib
 import urlparse
 import m3u8
 import shutil
+import tempfile
 
 import crypto
 from futures import ThreadPoolExecutor
@@ -149,7 +150,12 @@ def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     elif new_key is None:
         playlist.key = None
     filename = os.path.join(full_path, os.path.basename(m3u8_uri))
-    playlist.dump(filename)
+    atomic_dump(playlist, filename)
+
+def atomic_dump(playlist, filename):
+    _, tmp_filename = tempfile.mkstemp()
+    playlist.dump(tmp_filename)
+    os.rename(tmp_filename, filename)
 
 def download_key(playlist, destination_path, new_key):
     if playlist.key:
@@ -170,10 +176,15 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
         if new_key is not False:
             plain = crypto.Decrypt(raw, current_key) if current_key else raw
             raw = crypto.Encrypt(plain, new_key) if new_key else plain
-        with open(filename, 'wb') as f:
-            shutil.copyfileobj(raw, f)
+        atomic_write(raw, filename)
         return filename
     else:
         # change modification time so the file is not removed by hlsclient.cleaner.clean
         os.utime(filename, None)
     return False
+
+def atomic_write(content, filename):
+    _, tmp_filename = tempfile.mkstemp()
+    with open(tmp_filename, 'wb') as f:
+        shutil.copyfileobj(content, f)
+    os.rename(tmp_filename, filename)
