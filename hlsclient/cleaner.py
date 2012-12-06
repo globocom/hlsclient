@@ -41,6 +41,6 @@ def clean(path, maxage, ignores):
 
         dirs = filter_ignored(dirs, ignores)
         for directory in filter_old_paths(root, dirs, maxage):
-            logging.debug("Removing old directory {path}".format(path=directory))
             if os.listdir(directory) == []:
+                logging.debug("Removing old directory {path}".format(path=directory))
                 os.rmdir(directory)
