@@ -24,11 +24,11 @@ def filter_old_files(basepath, paths, maxage):
     return (f for f in old_paths if FILES_PATTERN.match(f))
 
 def filter_ignored(names, ignores):
+    # we filter the list in place so os.walk will not look in subdirs of ignored paths
     for name in names[:]:
         if any(fnmatch.fnmatch(name, ignore) for ignore in ignores):
             names.remove(name)
     return names
-
 
 def clean(path, maxage, ignores):
     logging.debug("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
@@ -42,4 +42,5 @@ def clean(path, maxage, ignores):
         dirs = filter_ignored(dirs, ignores)
         for directory in filter_old_paths(root, dirs, maxage):
             logging.debug("Removing old directory {path}".format(path=directory))
-            shutil.rmtree(directory)
+            if os.listdir(directory) == []:
+                os.rmdir(directory)
