@@ -5,6 +5,7 @@ import m3u8
 import os
 import urllib
 import StringIO
+import tempfile
 
 import hlsclient.consumer
 from .fake_m3u8_server import M3U8_SERVER, M3U8_HOST, M3U8_PORT
@@ -295,3 +296,33 @@ def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
     original_m3u8 = tmpdir.join('real_content.m3u8').read()
     expected_audio_m3u8 = original_m3u8.replace('.ts', '.aac')
     assert expected_audio_m3u8 == tmpdir.join('transcode.m3u8').read()
+
+def assert_closes_all_fds(monkeypatch, fun, args):
+    created_fds = []
+    closed_fds = []
+
+    close = os.close
+    def mock_close(fd):
+        closed_fds.append(fd)
+        close(fd)
+
+    mkstemp = tempfile.mkstemp
+    def mock_mkstemp(*args, **kwargs):
+        fd, filename = mkstemp(*args, **kwargs)
+        created_fds.append(fd)
+        return fd, filename
+
+    monkeypatch.setattr(os, 'close', mock_close)
+    monkeypatch.setattr(tempfile, 'mkstemp', mock_mkstemp)
+    fun(*args)
+
+    assert created_fds
+    assert closed_fds == created_fds
+
+def test_atomic_write_closes_file_descriptor(tmpdir, monkeypatch):
+    args = [StringIO.StringIO("dummy"), str(tmpdir.join('tempfile'))]
+    assert_closes_all_fds(monkeypatch, hlsclient.consumer.atomic_write, args)
+
+def test_atomic_dump_closes_file_descriptor(tmpdir, monkeypatch):
+    args = [m3u8.M3U8(), str(tmpdir.join('tempfile'))]
+    assert_closes_all_fds(monkeypatch, hlsclient.consumer.atomic_dump, args)

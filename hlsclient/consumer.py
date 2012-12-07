@@ -153,9 +153,12 @@ def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
     atomic_dump(playlist, filename)
 
 def atomic_dump(playlist, filename):
-    _, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
-    playlist.dump(tmp_filename)
-    os.rename(tmp_filename, filename)
+    try:
+        fd, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
+        playlist.dump(tmp_filename)
+        os.rename(tmp_filename, filename)
+    finally:
+        os.close(fd)
 
 def download_key(playlist, destination_path, new_key):
     if playlist.key:
@@ -184,7 +187,10 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
     return False
 
 def atomic_write(content, filename):
-    _, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
-    with open(tmp_filename, 'wb') as f:
-        shutil.copyfileobj(content, f)
-    os.rename(tmp_filename, filename)
+    try:
+        fd, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
+        with open(tmp_filename, 'wb') as f:
+            shutil.copyfileobj(content, f)
+        os.rename(tmp_filename, filename)
+    finally:
+        os.close(fd)
