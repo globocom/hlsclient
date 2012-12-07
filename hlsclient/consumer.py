@@ -155,6 +155,7 @@ def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):
 def atomic_dump(playlist, filename):
     try:
         fd, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
+        os.chmod(tmp_filename, 0644)
         playlist.dump(tmp_filename)
         os.rename(tmp_filename, filename)
     finally:
@@ -189,6 +190,7 @@ def download_to_file(uri, destination_path, current_key=None, new_key=False):
 def atomic_write(content, filename):
     try:
         fd, tmp_filename = tempfile.mkstemp(dir=os.path.dirname(filename))
+        os.chmod(tmp_filename, 0644)
         with open(tmp_filename, 'wb') as f:
             shutil.copyfileobj(content, f)
         os.rename(tmp_filename, filename)

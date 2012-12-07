@@ -4,6 +4,7 @@ import logging
 import m3u8
 import os
 import urllib
+import stat
 import StringIO
 import tempfile
 
@@ -239,6 +240,8 @@ def test_consume_from_balancer_should_report_content_modified(tmpdir):
     expected_created = ['low.m3u8', 'low1.ts', 'low2.ts']
     resources_created = os.listdir(str(tmpdir))
     assert sorted(expected_created) == sorted(resources_created)
+    for filename in resources_created:
+        assert stat.S_IMODE(os.stat(str(tmpdir.join(filename))).st_mode) == 0644
 
 def test_consume_from_balancer_should_not_report_content_modified_if_there_are_no_changes(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
