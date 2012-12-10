@@ -1,5 +1,7 @@
 import logging
 import time
+import signal
+import sys
 
 from lockfile import LockTimeout
 from lock import ExpiringLinkLockFile
@@ -32,6 +34,15 @@ def main():
     lock_expiration = config.getint('lock', 'expiration')
     lock = ExpiringLinkLockFile(lock_path)
 
+    def signal_handler(signal, frame):
+        try:
+            logging.info('Interrupted. Releasing lock.')
+            lock.release_if_locking()
+        finally:
+            sys.exit(0)
+
+    signal.signal(signal.SIGTERM, signal_handler)
+
     while True:
         try:
             if lock.i_am_locking():
@@ -53,7 +64,7 @@ def main():
             logging.exception('An unknown error happened')
         except KeyboardInterrupt:
             logging.debug('Quitting...')
-            lock.release()
+            lock.release_if_locking()
             return
         time.sleep(0.1)
 

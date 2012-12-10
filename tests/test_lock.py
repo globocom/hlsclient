@@ -37,3 +37,19 @@ def test_lock_can_be_breaked(tmpdir):
     second_lock.acquire()
     assert second_lock.i_am_locking()
     assert not lock.i_am_locking()
+
+
+def test_release_if_locking_unlocks(tmpdir):
+    lock_name = str(tmpdir.join('lockfile'))
+
+    lock = ExpiringLinkLockFile(lock_name)
+    lock.unique_name +=  '_really_unique_name'
+    lock.acquire()
+    lock.release_if_locking()
+
+    second_lock = ExpiringLinkLockFile(lock_name)
+    second_lock.unique_name +=  '_avoid_duplicated_lock_name'
+    second_lock.acquire(timeout=1)
+    assert second_lock.is_locked()
+    assert second_lock.i_am_locking()
+    assert not lock.i_am_locking()

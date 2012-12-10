@@ -13,3 +13,7 @@ class ExpiringLinkLockFile(LinkLockFile):
 
     def update_lock(self):
         os.utime(self.lock_file, None)
+
+    def release_if_locking(self):
+        if self.i_am_locking():
+            self.release()
