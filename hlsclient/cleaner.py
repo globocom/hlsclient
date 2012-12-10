@@ -31,16 +31,20 @@ def filter_ignored(names, ignores):
     return names
 
 def clean(path, maxage, ignores):
-    logging.debug("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
-    for root, dirs, files in os.walk(path):
+    logging.info("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
+    start_time = time.time()
 
+    for root, dirs, files in os.walk(path):
         files = filter_ignored(files, ignores)
         for filename in filter_old_files(root, files, maxage):
-            logging.debug("Removing old file {path}".format(path=filename))
+            logging.info("Removing old file {path}".format(path=filename))
             os.remove(filename)
 
         dirs = filter_ignored(dirs, ignores)
         for directory in filter_old_paths(root, dirs, maxage):
             if os.listdir(directory) == []:
-                logging.debug("Removing old directory {path}".format(path=directory))
+                logging.info("Removing old directory {path}".format(path=directory))
                 os.rmdir(directory)
+
+    total_time = time.time() - start_time
+    logging.info("Cleaning took %.1fs to run", total_time)
