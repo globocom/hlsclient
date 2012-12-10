@@ -6,7 +6,7 @@ import re
 import fnmatch
 
 
-FILES_PATTERN = re.compile('.+\.(ts|m3u8|bin)$')
+FILES_PATTERN = re.compile('.+\.(ts|m3u8|aac|bin)$')
 
 def path_age(path):
     atime = os.path.getatime(path)

@@ -8,8 +8,8 @@ SECONDS = 1
 
 def test_should_remove_old_files(tmpdir):
     tmpdir = str(tmpdir)
-    old_fnames = 'old1.ts old2.m3u8 old3.bin d.txt'.split()
-    fresh_files = 'a.ts b.ts c.ts'.split()
+    old_fnames = 'old1.ts old2.m3u8 old3.bin audioold1.aac audioold2.aac d.txt'.split()
+    fresh_files = 'a.ts audioold2.aac b.ts c.ts'.split()
     create_old_files(tmpdir, old_fnames, 60 * SECONDS)
     create_fresh_files(tmpdir, fresh_files)
 
