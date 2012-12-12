@@ -117,11 +117,11 @@ To run the client, simply run:
 Running tests
 -------------
 
-We use py.test for testing.
+You will need ffmpeg and mediainfo installed.
 
 ::
 
-    $ py.test
+    $ ./runtests
 
 .. _HTTP Live Streaming Client: https://developer.apple.com/resources/http-streaming/
 
