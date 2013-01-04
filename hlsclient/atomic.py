@@ -10,17 +10,15 @@ class AtomicWriteFile(object):
 
         dirname = os.path.dirname(filename)
         _, ext = os.path.splitext(filename)
-        self.fd, self.tmp_filename = tempfile.mkstemp(dir=dirname, suffix=ext)
+        fd, self.tmp_filename = tempfile.mkstemp(dir=dirname, suffix=ext)
+        os.close(fd)
         os.chmod(self.tmp_filename, 0644)
 
     def __enter__(self):
         return self.tmp_filename
 
     def __exit__(self, exception_type, exception_val, trace):
-        try:
-            os.rename(self.tmp_filename, self.filename)
-        finally:
-            os.close(self.fd)
+        os.rename(self.tmp_filename, self.filename)
 
 
 class AtomicWriteFileObj(AtomicWriteFile):
