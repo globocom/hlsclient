@@ -14,6 +14,8 @@ def test_should_remove_old_files(tmpdir):
     create_fresh_files(tmpdir, fresh_files)
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == fresh_files + ['d.txt']
 
 
@@ -30,6 +32,8 @@ def test_should_remove_old_files_and_directories(tmpdir):
     os.utime(dir1, (time.time() - 60 * SECONDS, time.time() - 60 * SECONDS))
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == fresh_files
 
 def test_should_remove_files_in_subdirs(tmpdir):
@@ -45,6 +49,8 @@ def test_should_remove_files_in_subdirs(tmpdir):
     os.utime(dir1, (time.time() - 60 * SECONDS, time.time() - 60 * SECONDS))
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(dir1) == fresh_files
 
 
@@ -56,6 +62,8 @@ def test_should_not_remove_directories_that_are_not_empty(tmpdir):
     create_fresh_files(dir1, ['a.ts'])
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == ['dir1']
     assert os.listdir(dir1) == ['a.ts']
 
@@ -70,6 +78,8 @@ def test_should_remove_directories_that_are_empty(tmpdir):
     create_fresh_files(dir1, ['a.ts'])
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == ['dir1']
     assert os.listdir(dir1) == ['a.ts']
 
@@ -85,6 +95,8 @@ def test_ensure_removes_are_based_on_access_time(tmpdir):
         f.read()
 
     clean(tmpdir, 50 * SECONDS, [])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == fresh_files + ['old1.ts']
 
 def test_ensure_files_with_a_dot_prefix_should_not_be_erased(tmpdir):
@@ -98,6 +110,8 @@ def test_ensure_files_with_a_dot_prefix_should_not_be_erased(tmpdir):
     create_old_files(tmpdir, old_fnames, some_time_ago)
 
     clean(tmpdir, 50 * SECONDS, ignores)
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) ==  ['.should_not_be_erased.ts']
 
 def test_should_not_erase_files_with_ops_prefix(tmpdir):
@@ -116,6 +130,8 @@ def test_should_not_erase_files_with_ops_prefix(tmpdir):
     os.utime(old_dir2, (some_time_ago, some_time_ago))
 
     clean(tmpdir, 50 * SECONDS, ignores)
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == ['ops_acesso_simultaneo.ts', 'ops_rsrs.ts', 'opsdir1']
 
 def test_should_be_possible_to_ignore_globs(tmpdir):
@@ -133,6 +149,8 @@ def test_should_be_possible_to_ignore_globs(tmpdir):
     os.utime(old_dir3, (some_time_ago, some_time_ago))
 
     clean(tmpdir, 50 * SECONDS, ["ignore*"])
+    time.sleep(0.01) # sleep because clean runs in another thread
+
     assert os.listdir(tmpdir) == ['ignore.ts', 'ignoredir1', 'ignoredir2']
 
 def create_old_files(destination, files, modification_timedelta):

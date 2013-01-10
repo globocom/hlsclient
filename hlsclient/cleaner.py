@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 import shutil
 import logging
@@ -7,6 +8,7 @@ import fnmatch
 
 
 FILES_PATTERN = re.compile('.+\.(ts|m3u8|aac|bin)$')
+is_cleaning = False
 
 def path_age(path):
     atime = os.path.getatime(path)
@@ -31,20 +33,30 @@ def filter_ignored(names, ignores):
     return names
 
 def clean(path, maxage, ignores):
-    logging.info("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
-    start_time = time.time()
+    if not is_cleaning:
+        t = threading.Thread(target=_clean, args=(path, maxage, ignores))
+        t.start()
 
-    for root, dirs, files in os.walk(path):
-        files = filter_ignored(files, ignores)
-        for filename in filter_old_files(root, files, maxage):
-            logging.info("Removing old file {path}".format(path=filename))
-            os.remove(filename)
+def _clean(path, maxage, ignores):
+    global is_cleaning
+    is_cleaning = True
+    try:
+        logging.info("Cleaning {path} (maxage = {maxage}s)".format(path=path, maxage=maxage))
+        start_time = time.time()
 
-        dirs = filter_ignored(dirs, ignores)
-        for directory in filter_old_paths(root, dirs, maxage):
-            if os.listdir(directory) == []:
-                logging.info("Removing old directory {path}".format(path=directory))
-                os.rmdir(directory)
+        for root, dirs, files in os.walk(path):
+            files = filter_ignored(files, ignores)
+            for filename in filter_old_files(root, files, maxage):
+                logging.info("Removing old file {path}".format(path=filename))
+                os.remove(filename)
 
-    total_time = time.time() - start_time
-    logging.info("Cleaning took %.1fs to run", total_time)
+            dirs = filter_ignored(dirs, ignores)
+            for directory in filter_old_paths(root, dirs, maxage):
+                if os.listdir(directory) == []:
+                    logging.info("Removing old directory {path}".format(path=directory))
+                    os.rmdir(directory)
+
+        total_time = time.time() - start_time
+        logging.info("Cleaning took %.1fs to run", total_time)
+    finally:
+        is_cleaning = False
