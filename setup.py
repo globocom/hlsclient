@@ -10,7 +10,7 @@ setup(
     long_description=README,
     author='Globo.com',
     url='https://github.com/globocom/hlsclient',
-    version='0.4.7',
+    version='0.4.8',
     zip_safe=False,
     include_package_data=True,
     packages=[
