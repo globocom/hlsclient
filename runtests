@@ -5,7 +5,7 @@ function install_deps {
 }
 
 function run {
-    PYTHONPATH=. py.test -vs tests/
+    PYTHONPATH=. py.test -vs tests/ $@
 }
 
 function stop_fake_server {
@@ -20,7 +20,7 @@ function main {
     install_deps
 	stop_fake_server
 	start_fake_server
-    run
+    run $@
 }
 
 if [ -z "$1" ]; then
