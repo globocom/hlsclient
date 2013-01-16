@@ -16,7 +16,7 @@ def test_should_remove_old_files(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(tmpdir) == fresh_files + ['d.txt']
+    assert sorted(os.listdir(tmpdir)) == sorted(fresh_files + ['d.txt'])
 
 
 def test_should_remove_old_files_and_directories(tmpdir):
@@ -34,7 +34,7 @@ def test_should_remove_old_files_and_directories(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(tmpdir) == fresh_files
+    assert sorted(os.listdir(tmpdir)) == sorted(fresh_files)
 
 def test_should_remove_files_in_subdirs(tmpdir):
     tmpdir = str(tmpdir)
@@ -51,7 +51,7 @@ def test_should_remove_files_in_subdirs(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(dir1) == fresh_files
+    assert sorted(os.listdir(dir1)) == sorted(fresh_files)
 
 
 def test_should_not_remove_directories_that_are_not_empty(tmpdir):
@@ -97,7 +97,7 @@ def test_ensure_removes_are_based_on_access_time(tmpdir):
     clean(tmpdir, 50 * SECONDS, [])
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(tmpdir) == fresh_files + ['old1.ts']
+    assert sorted(os.listdir(tmpdir)) == sorted(fresh_files + ['old1.ts'])
 
 def test_ensure_files_with_a_dot_prefix_should_not_be_erased(tmpdir):
     tmpdir = str(tmpdir)
@@ -132,7 +132,7 @@ def test_should_not_erase_files_with_ops_prefix(tmpdir):
     clean(tmpdir, 50 * SECONDS, ignores)
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(tmpdir) == ['ops_acesso_simultaneo.ts', 'ops_rsrs.ts', 'opsdir1']
+    assert sorted(os.listdir(tmpdir)) == sorted(['ops_acesso_simultaneo.ts', 'ops_rsrs.ts', 'opsdir1'])
 
 def test_should_be_possible_to_ignore_globs(tmpdir):
     tmpdir = str(tmpdir)
@@ -151,7 +151,7 @@ def test_should_be_possible_to_ignore_globs(tmpdir):
     clean(tmpdir, 50 * SECONDS, ["ignore*"])
     time.sleep(0.01) # sleep because clean runs in another thread
 
-    assert os.listdir(tmpdir) == ['ignore.ts', 'ignoredir1', 'ignoredir2']
+    assert sorted(os.listdir(tmpdir)) == sorted(['ignore.ts', 'ignoredir1', 'ignoredir2'])
 
 def create_old_files(destination, files, modification_timedelta):
     create_dummy_files(destination, files, mtime=time.time() - modification_timedelta)
