@@ -1,5 +1,5 @@
 import atexit
-import base64
+import md5
 import logging
 import time
 import os
@@ -25,8 +25,7 @@ def worker_started(playlist, config):
     return lock.is_locked()
 
 def worker_id(playlist):
-    replace_special_chars = 'aaaa'
-    return base64.b64encode(playlist, replace_special_chars)
+    return md5.md5(playlist).hexdigest()
 
 def start_worker_in_background(playlist):
     AFTER_FORK_DELAY = 0.1
