@@ -1,9 +1,9 @@
 import base64
 import logging
 import time
-import os
 import signal
 import sys
+import subprocess
 
 from lockfile import LockTimeout
 from lock import ExpiringLinkLockFile
@@ -23,7 +23,7 @@ def worker_started(playlist, config):
     return lock.is_locked()
 
 def start_worker_in_background(playlist):
-    os.system('{0} -m hlsclient {1} &'.format(sys.executable, playlist))
+    subprocess.Popen([sys.executable, '-m', 'hlsclient', playlist], stdout=subprocess.PIPE)
 
 def find_worker_playlists(current_playlist, playlists):
     for stream, value in playlists['streams'].items():
