@@ -1,6 +1,8 @@
+import atexit
 import base64
 import logging
 import time
+import os
 import signal
 import sys
 import subprocess
@@ -22,8 +24,16 @@ def worker_started(playlist, config):
     lock = ExpiringLinkLockFile(lock_path)
     return lock.is_locked()
 
+def worker_id(playlist):
+    replace_special_chars = 'aaaa'
+    return base64.b64encode(playlist, replace_special_chars)
+
 def start_worker_in_background(playlist):
-    subprocess.Popen([sys.executable, '-m', 'hlsclient', playlist], stdout=subprocess.PIPE)
+    AFTER_FORK_DELAY = 0.1
+    os.spawnv(os.P_NOWAIT, sys.executable, ['-m', 'hlsclient', playlist])
+    # delay because fork() seems to limit how many forks
+    # can be created in a time window
+    time.sleep(AFTER_FORK_DELAY)
 
 def find_worker_playlists(current_playlist, playlists):
     for stream, value in playlists['streams'].items():
@@ -36,13 +46,13 @@ def save_server_name(playlists):
 
 
 def lock_path_for(config, current_playlist):
-    return '{0}.{1}'.format(config.get('lock', 'path'), base64.b64encode(current_playlist))
+    return '{0}.{1}'.format(config.get('lock', 'path'), worker_id(current_playlist))
 
 
 
 def start_as_master():
     config = helpers.load_config()
-    helpers.setup_logging(config)
+    helpers.setup_logging(config, "master process")
 
     logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
@@ -112,7 +122,7 @@ def run_worker_task(config, current_playlist, destination, balancer, encrypt):
 
 def start_as_worker(current_playlist):
     config = helpers.load_config()
-    helpers.setup_logging(config)
+    helpers.setup_logging(config, "worker for {}".format(current_playlist))
 
     logging.debug('HLS CLIENT Started for {}'.format(current_playlist))
     destination = config.get('hlsclient', 'destination')
@@ -133,14 +143,13 @@ def start_as_worker(current_playlist):
     lock_expiration = config.getint('lock', 'expiration')
     lock = ExpiringLinkLockFile(lock_path)
 
-    def signal_handler(signal, frame):
+    @atexit.register
+    def release_lock(*args):
         try:
             logging.info('Interrupted. Releasing lock.')
             lock.release_if_locking()
         finally:
             sys.exit(0)
-
-    signal.signal(signal.SIGTERM, signal_handler)
 
     while True:
         try:
