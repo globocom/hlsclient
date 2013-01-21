@@ -21,7 +21,13 @@ from cleaner import clean
 
 def worker_started(playlist, config):
     lock_path = lock_path_for(config, playlist)
+    lock_expiration = config.getint('lock', 'expiration')
     lock = ExpiringLinkLockFile(lock_path)
+
+    if lock.is_locked() and lock.expired(tolerance=lock_expiration):
+        logging.warning("Lock for playlist {playlist} expired. Breaking it.".format(playlist=playlist))
+        lock.break_lock()
+
     return lock.is_locked()
 
 def worker_id(playlist):
@@ -153,6 +159,7 @@ def start_as_worker(current_playlist):
     while True:
         try:
             if lock.i_am_locking():
+                lock.update_lock()
                 if not run_worker_task(config, current_playlist, destination, balancer, encrypt):
                     return
             elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
