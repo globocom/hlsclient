@@ -148,13 +148,13 @@ def start_as_worker(current_playlist):
     lock_expiration = config.getint('lock', 'expiration')
     lock = ExpiringLinkLockFile(lock_path)
 
-    @atexit.register
     def release_lock(*args):
         try:
             logging.info('Interrupted. Releasing lock.')
             lock.release_if_locking()
         finally:
             sys.exit(0)
+    signal.signal(signal.SIGTERM, release_lock)
 
     while True:
         try:
