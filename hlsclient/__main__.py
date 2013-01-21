@@ -77,7 +77,7 @@ def start_as_master():
     lock = ExpiringLinkLockFile(lock_path)
 
     os.setpgrp()
-    def signal_handler(sig, frame):
+    def signal_handler(*args):
         try:
             logging.info('Interrupted. Releasing lock.')
             lock.release_if_locking()
@@ -114,7 +114,7 @@ def start_as_master():
             logging.exception('An unknown error happened')
         except KeyboardInterrupt:
             logging.debug('Quitting...')
-            lock.release_if_locking()
+            signal_handler()
             return
         time.sleep(0.1)
 
