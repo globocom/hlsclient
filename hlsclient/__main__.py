@@ -173,6 +173,8 @@ def start_as_worker(current_playlist):
             elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
                 logging.warning("Lock expired. Breaking it.")
                 lock.break_lock()
+            elif lock.is_locked():
+                sys.exit(0)
             else:
                 lock.acquire(timeout=lock_timeout)
         except LockTimeout:
