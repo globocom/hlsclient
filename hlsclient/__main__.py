@@ -18,6 +18,7 @@ from discover import discover_playlists, get_servers
 from combine import combine_playlists
 from cleaner import clean
 
+SIG_SENT = False
 
 def worker_started(playlist, config):
     lock_path = lock_path_for(config, playlist)
@@ -35,7 +36,8 @@ def worker_id(playlist):
 
 def start_worker_in_background(playlist):
     AFTER_FORK_DELAY = 0.1
-    os.spawnv(os.P_NOWAIT, sys.executable, ['-m', 'hlsclient', playlist])
+    os.spawnl(os.P_NOWAIT, sys.executable, '-m', 'hlsclient', playlist)
+
     # delay because fork() seems to limit how many forks
     # can be created in a time window
     time.sleep(AFTER_FORK_DELAY)
@@ -74,10 +76,16 @@ def start_as_master():
     lock_expiration = config.getint('lock', 'expiration')
     lock = ExpiringLinkLockFile(lock_path)
 
-    def signal_handler(signal, frame):
+    os.setpgrp()
+    def signal_handler(sig, frame):
         try:
             logging.info('Interrupted. Releasing lock.')
             lock.release_if_locking()
+            logging.info('Killing childs.')
+            global SIG_SENT
+            if not SIG_SENT:
+                SIG_SENT = True
+                os.killpg(0, signal.SIGTERM)
         finally:
             sys.exit(0)
 

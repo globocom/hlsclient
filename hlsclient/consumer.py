@@ -10,9 +10,9 @@ import shutil
 import crypto
 from futures import ThreadPoolExecutor
 
-from hlsclient.transcode import transcode_playlist
-from hlsclient import helpers
-from hlsclient import atomic
+import helpers
+import atomic
+from transcode import transcode_playlist
 
 config = helpers.load_config()
 NUM_THREAD_WORKERS = config.getint('hlsclient', 'num_thread_workers')
