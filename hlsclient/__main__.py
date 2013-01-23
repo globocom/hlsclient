@@ -1,11 +1,9 @@
-import atexit
 import md5
 import logging
 import time
 import os
 import signal
 import sys
-import subprocess
 
 from lockfile import LockTimeout
 from lock import ExpiringLinkLockFile
@@ -51,11 +49,8 @@ def find_worker_playlists(current_playlist, playlists):
 def save_server_name(playlists):
     pass
 
-
 def lock_path_for(config, current_playlist):
     return '{0}.{1}'.format(config.get('lock', 'path'), worker_id(current_playlist))
-
-
 
 def start_as_master():
     config = helpers.load_config()
@@ -63,13 +58,10 @@ def start_as_master():
 
     logging.debug('HLS CLIENT Started')
     destination = config.get('hlsclient', 'destination')
-    clean_maxage = config.getint('hlsclient', 'clean_maxage')
-    not_modified_tolerance = config.getint('hlsclient', 'not_modified_tolerance')
-    encrypt = config.getboolean('hlsclient', 'encrypt')
 
     # ignore all comma separated wildcard names for `clean` call
+    clean_maxage = config.getint('hlsclient', 'clean_maxage')
     ignores = helpers.get_ignore_patterns(config)
-    balancer = Balancer(not_modified_tolerance)
 
     lock_path = config.get('lock', 'path')
     lock_timeout = config.getint('lock', 'timeout')
@@ -138,17 +130,11 @@ def start_as_worker(current_playlist):
     helpers.setup_logging(config, "worker for {}".format(current_playlist))
 
     logging.debug('HLS CLIENT Started for {}'.format(current_playlist))
+
     destination = config.get('hlsclient', 'destination')
-    clean_maxage = config.getint('hlsclient', 'clean_maxage')
-    not_modified_tolerance = config.getint('hlsclient', 'not_modified_tolerance')
     encrypt = config.getboolean('hlsclient', 'encrypt')
 
-    # ignore all comma separated wildcard names for `clean` call
-    ignores = helpers.get_ignore_patterns(config)
-    balancer = Balancer(not_modified_tolerance)
-
-
-
+    not_modified_tolerance = config.getint('hlsclient', 'not_modified_tolerance')
     balancer = Balancer(not_modified_tolerance)
 
     lock_path = lock_path_for(config, current_playlist)
