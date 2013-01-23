@@ -88,13 +88,18 @@ def start_as_master():
             if lock.i_am_locking():
                 lock.update_lock()
                 playlists = discover_playlists(config)
-
+                logging.info("Found the following playlists: %s" % playlists)
                 combine_playlists(playlists, destination)
+
                 for stream, value in playlists['streams'].items():
                     playlist = value['input-path']
                     if not worker_started(playlist, config):
                         start_worker_in_background(playlist)
+                    else:
+                        logging.debug('Worker found for playlist %s' % stream)
+
                 clean(destination, clean_maxage, ignores)
+
             elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
                 logging.warning("Lock expired. Breaking it.")
                 lock.break_lock()
@@ -159,9 +164,10 @@ def start_as_worker(current_playlist):
                     lock.release_if_locking()
                     return
             elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
-                logging.warning("Lock expired. Breaking it.")
+                logging.warning("Lock expired. Breaking it")
                 lock.break_lock()
             elif lock.is_locked():
+                logging.warning("Someone else acquired the lock")
                 sys.exit(0)
             else:
                 lock.acquire(timeout=lock_timeout)
