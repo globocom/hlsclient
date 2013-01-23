@@ -155,6 +155,8 @@ def start_as_worker(current_playlist):
             if lock.i_am_locking():
                 lock.update_lock()
                 if not run_worker_task(config, current_playlist, destination, balancer, encrypt):
+                    logging.warning("Playlist is not available anymore")
+                    lock.release_if_locking()
                     return
             elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
                 logging.warning("Lock expired. Breaking it.")
