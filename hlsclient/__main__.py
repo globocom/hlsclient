@@ -17,8 +17,6 @@ from combine import combine_playlists
 from cleaner import clean
 from worker import Worker
 
-SIG_SENT = False
-
 
 def start_worker_in_background(playlist):
     AFTER_FORK_DELAY = 0.1
@@ -27,6 +25,7 @@ def start_worker_in_background(playlist):
 
 class MasterWorker(Worker):
     def setup(self):
+        self.sig_sent = False
         helpers.setup_logging(self.config, "master process")
         logging.debug('HLS CLIENT Started')
         self.destination = self.config.get('hlsclient', 'destination')
@@ -39,9 +38,8 @@ class MasterWorker(Worker):
         os.setpgrp()
 
     def interrupted(self, *args):
-        global SIG_SENT
-        if not SIG_SENT:
-            SIG_SENT = True
+        if not self.sig_sent:
+            self.sig_sent = True
             os.killpg(0, signal.SIGTERM)
         super(MasterWorker, self).interrupted(*args)
 
@@ -113,4 +111,3 @@ if __name__ == "__main__":
     else:
         master = MasterWorker()
         master.run_forever()
-
