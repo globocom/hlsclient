@@ -22,7 +22,7 @@ class Worker(object):
     def run(self):
         raise NotImplementedError()
 
-    def lost_lock(self):
+    def lost_lock_callback(self):
         pass
 
     def interrupted(self, *args):
@@ -58,7 +58,7 @@ class Worker(object):
     def can_run(self):
         if self.other_is_running():
             logging.warning("Someone else acquired the lock")
-            self.lost_lock()
+            self.lost_lock_callback()
         elif not self.lock.is_locked():
             self.lock.acquire(timeout=self.lock_timeout)
         return self.lock.i_am_locking()

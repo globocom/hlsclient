@@ -94,7 +94,7 @@ class PlaylistWorker(Worker):
                 return {"streams": {stream: value}}
         return {}
 
-    def lost_lock(self):
+    def lost_lock_callback(self):
         self.stop()
 
 
