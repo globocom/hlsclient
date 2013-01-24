@@ -67,10 +67,11 @@ def start_as_master():
                 for stream, value in playlists['streams'].items():
                     playlist = value['input-path']
                     worker = PlaylistWorker(playlist)
-                    if not worker.lock.is_locked():
+                    if not worker.other_is_running():
+                        logging.debug('No worker found for playlist %s' % playlist)
                         start_worker_in_background(playlist)
                     else:
-                        logging.debug('Worker found for playlist %s' % stream)
+                        logging.debug('Worker found for playlist %s' % playlist)
 
                 clean(destination, clean_maxage, ignores)
 

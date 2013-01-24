@@ -52,18 +52,22 @@ class Worker(object):
             self.run()
 
     def can_run(self):
-        if self.lock.is_locked():
-            if self.lock.expired(tolerance=self.lock_expiration):
-                logging.warning("Lock expired. Breaking it")
-                self.lock.break_lock()
-            if not self.lock.i_am_locking():
-                logging.warning("Someone else acquired the lock")
-                self.lost_lock()
-        else:
+        if self.other_is_running():
+            logging.warning("Someone else acquired the lock")
+            self.lost_lock()
+        elif not self.lock.is_locked():
             self.lock.acquire(timeout=self.lock_timeout)
         return self.lock.i_am_locking()
 
-    def interrupted(*args):
+    def other_is_running(self):
+        other = self.lock.is_locked() and not self.lock.i_am_locking()
+        if other and self.lock.expired(tolerance=self.lock_expiration):
+            logging.warning("Lock expired. Breaking it")
+            self.lock.break_lock()
+            return False
+        return other
+
+    def interrupted(self, *args):
         logging.info('Interrupted. Releasing lock.')
         self.stop()
 

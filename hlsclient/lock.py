@@ -4,6 +4,10 @@ import time
 from lockfile.linklockfile import LinkLockFile
 
 class ExpiringLinkLockFile(LinkLockFile):
+    def __init__(self, *args, **kwargs):
+        LinkLockFile.__init__(self, *args, **kwargs)
+        self.unique_name += os.path.basename(self.path)
+
     def expired(self, tolerance):
         return self.lock_age > tolerance
 
