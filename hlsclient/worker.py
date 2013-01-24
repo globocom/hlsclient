@@ -25,6 +25,9 @@ class Worker(object):
     def lost_lock_callback(self):
         pass
 
+    def should_run(self):
+        return True
+
     def interrupted(self, *args):
         logging.info('Interrupted. Releasing lock.')
         self.stop()
@@ -38,7 +41,7 @@ class Worker(object):
     def run_forever(self):
         self.setup()
         signal.signal(signal.SIGTERM, self.interrupted)
-        while True:
+        while self.should_run():
             try:
                 self.run_if_locking()
             except LockTimeout:
@@ -47,8 +50,9 @@ class Worker(object):
                 logging.exception('An unknown error happened')
             except KeyboardInterrupt:
                 logging.debug('Quitting...')
-                self.stop()
+                break
             time.sleep(0.1)
+        self.stop()
 
     def run_if_locking(self):
         if self.can_run():

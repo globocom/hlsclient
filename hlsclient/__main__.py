@@ -1,6 +1,8 @@
-import md5
+import datetime
 import logging
+import md5
 import os
+import random
 import signal
 import sys
 
@@ -13,6 +15,7 @@ from cleaner import clean
 from discover import discover_playlists, get_servers
 from worker import Worker
 
+MAX_TTL_IN_SECONDS = 600
 
 class MasterWorker(Worker):
     def setup(self):
@@ -69,10 +72,14 @@ class PlaylistWorker(Worker):
     def setup(self):
         helpers.setup_logging(self.config, "worker for {}".format(self.playlist))
         logging.debug('HLS CLIENT Started for {}'.format(self.playlist))
+
         self.destination = self.config.get('hlsclient', 'destination')
         self.encrypt = self.config.getboolean('hlsclient', 'encrypt')
         not_modified_tolerance = self.config.getint('hlsclient', 'not_modified_tolerance')
         self.balancer = Balancer(not_modified_tolerance)
+
+        ttl = datetime.timedelta(seconds=random.randint(1, MAX_TTL_IN_SECONDS))
+        self.death_time = datetime.datetime.now() + ttl
 
     def run(self):
         playlists = discover_playlists(self.config)
@@ -93,6 +100,12 @@ class PlaylistWorker(Worker):
             if value['input-path'] == self.playlist:
                 return {"streams": {stream: value}}
         return {}
+
+    def should_run(self):
+        should_live = datetime.datetime.now() < self.death_time
+        if not should_live:
+            logging.info("Worker {} should die now!".format(self.worker_id()))
+        return should_live
 
     def lost_lock_callback(self):
         self.stop()
