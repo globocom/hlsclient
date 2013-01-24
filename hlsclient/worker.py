@@ -25,6 +25,10 @@ class Worker(object):
     def lost_lock(self):
         pass
 
+    def interrupted(self, *args):
+        logging.info('Interrupted. Releasing lock.')
+        self.stop()
+
     def setup_lock(self):
         lock_path = self.lock_path()
         self.lock_timeout = self.config.getint('lock', 'timeout')
@@ -66,10 +70,6 @@ class Worker(object):
             self.lock.break_lock()
             return False
         return other
-
-    def interrupted(self, *args):
-        logging.info('Interrupted. Releasing lock.')
-        self.stop()
 
     def stop(self):
         try:

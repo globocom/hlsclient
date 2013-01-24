@@ -25,70 +25,41 @@ def start_worker_in_background(playlist):
     os.spawnl(os.P_NOWAIT, sys.executable, '-m', 'hlsclient', playlist)
 
 
-def start_as_master():
-    config = helpers.load_config()
-    helpers.setup_logging(config, "master process")
+class MasterWorker(Worker):
+    def setup(self):
+        helpers.setup_logging(self.config, "master process")
+        logging.debug('HLS CLIENT Started')
+        self.destination = self.config.get('hlsclient', 'destination')
 
-    logging.debug('HLS CLIENT Started')
-    destination = config.get('hlsclient', 'destination')
+        # ignore all comma separated wildcard names for `clean` call
+        self.clean_maxage = self.config.getint('hlsclient', 'clean_maxage')
+        self.ignores = helpers.get_ignore_patterns(self.config)
 
-    # ignore all comma separated wildcard names for `clean` call
-    clean_maxage = config.getint('hlsclient', 'clean_maxage')
-    ignores = helpers.get_ignore_patterns(config)
+        # Setup process group, so we can kill the childs
+        os.setpgrp()
 
-    lock_path = config.get('lock', 'path')
-    lock_timeout = config.getint('lock', 'timeout')
-    lock_expiration = config.getint('lock', 'expiration')
-    lock = ExpiringLinkLockFile(lock_path)
+    def interrupted(self, *args):
+        global SIG_SENT
+        if not SIG_SENT:
+            SIG_SENT = True
+            os.killpg(0, signal.SIGTERM)
+        super(MasterWorker, self).interrupted(*args)
 
-    os.setpgrp()
-    def signal_handler(*args):
-        try:
-            logging.info('Interrupted. Releasing lock.')
-            lock.release_if_locking()
-            logging.info('Killing childs.')
-            global SIG_SENT
-            if not SIG_SENT:
-                SIG_SENT = True
-                os.killpg(0, signal.SIGTERM)
-        finally:
-            sys.exit(0)
+    def run(self):
+        playlists = discover_playlists(self.config)
+        logging.info("Found the following playlists: %s" % playlists)
+        combine_playlists(playlists, self.destination)
 
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    while True:
-        try:
-            if lock.i_am_locking():
-                lock.update_lock()
-                playlists = discover_playlists(config)
-                logging.info("Found the following playlists: %s" % playlists)
-                combine_playlists(playlists, destination)
-
-                for stream, value in playlists['streams'].items():
-                    playlist = value['input-path']
-                    worker = PlaylistWorker(playlist)
-                    if not worker.other_is_running():
-                        logging.debug('No worker found for playlist %s' % playlist)
-                        start_worker_in_background(playlist)
-                    else:
-                        logging.debug('Worker found for playlist %s' % playlist)
-
-                clean(destination, clean_maxage, ignores)
-
-            elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
-                logging.warning("Lock expired. Breaking it.")
-                lock.break_lock()
+        for stream, value in playlists['streams'].items():
+            playlist = value['input-path']
+            worker = PlaylistWorker(playlist)
+            if not worker.other_is_running():
+                logging.debug('No worker found for playlist %s' % playlist)
+                start_worker_in_background(playlist)
             else:
-                lock.acquire(timeout=lock_timeout)
-        except LockTimeout:
-            logging.debug("Unable to acquire lock")
-        except Exception as e:
-            logging.exception('An unknown error happened')
-        except KeyboardInterrupt:
-            logging.debug('Quitting...')
-            signal_handler()
-            return
-        time.sleep(0.1)
+                logging.debug('Worker found for playlist %s' % playlist)
+
+        clean(self.destination, self.clean_maxage, self.ignores)
 
 
 class PlaylistWorker(Worker):
@@ -104,8 +75,8 @@ class PlaylistWorker(Worker):
         return md5.md5(self.playlist).hexdigest()
 
     def setup(self):
-        logging.debug('HLS CLIENT Started for {}'.format(self.playlist))
         helpers.setup_logging(self.config, "worker for {}".format(self.playlist))
+        logging.debug('HLS CLIENT Started for {}'.format(self.playlist))
         self.destination = self.config.get('hlsclient', 'destination')
         self.encrypt = self.config.getboolean('hlsclient', 'encrypt')
         not_modified_tolerance = self.config.getint('hlsclient', 'not_modified_tolerance')
@@ -140,4 +111,6 @@ if __name__ == "__main__":
         worker = PlaylistWorker(sys.argv[1])
         worker.run_forever()
     else:
-        start_as_master()
+        master = MasterWorker()
+        master.run_forever()
+
