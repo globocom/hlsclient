@@ -15,42 +15,15 @@ from consumer import consume_from_balancer
 from discover import discover_playlists, get_servers
 from combine import combine_playlists
 from cleaner import clean
+from worker import Worker
 
 SIG_SENT = False
 
-def worker_started(playlist, config):
-    lock_path = lock_path_for(config, playlist)
-    lock_expiration = config.getint('lock', 'expiration')
-    lock = ExpiringLinkLockFile(lock_path)
-
-    if lock.is_locked() and lock.expired(tolerance=lock_expiration):
-        logging.warning("Lock for playlist {playlist} expired. Breaking it.".format(playlist=playlist))
-        lock.break_lock()
-
-    return lock.is_locked()
-
-def worker_id(playlist):
-    return md5.md5(playlist).hexdigest()
 
 def start_worker_in_background(playlist):
     AFTER_FORK_DELAY = 0.1
     os.spawnl(os.P_NOWAIT, sys.executable, '-m', 'hlsclient', playlist)
 
-    # delay because fork() seems to limit how many forks
-    # can be created in a time window
-    time.sleep(AFTER_FORK_DELAY)
-
-def find_worker_playlists(current_playlist, playlists):
-    for stream, value in playlists['streams'].items():
-        if value['input-path'] == current_playlist:
-            return {"streams": {stream: value}}
-    return {}
-
-def save_server_name(playlists):
-    pass
-
-def lock_path_for(config, current_playlist):
-    return '{0}.{1}'.format(config.get('lock', 'path'), worker_id(current_playlist))
 
 def start_as_master():
     config = helpers.load_config()
@@ -93,7 +66,8 @@ def start_as_master():
 
                 for stream, value in playlists['streams'].items():
                     playlist = value['input-path']
-                    if not worker_started(playlist, config):
+                    worker = PlaylistWorker(playlist)
+                    if not worker.lock.is_locked():
                         start_worker_in_background(playlist)
                     else:
                         logging.debug('Worker found for playlist %s' % stream)
@@ -116,77 +90,53 @@ def start_as_master():
         time.sleep(0.1)
 
 
-def run_worker_task(config, current_playlist, destination, balancer, encrypt):
-    playlists = discover_playlists(config)
+class PlaylistWorker(Worker):
+    def __init__(self, playlist):
+        self.playlist = playlist
+        super(PlaylistWorker, self).__init__()
 
-    worker_playlists = find_worker_playlists(current_playlist, playlists)
-    if not worker_playlists:
-        return False
+    def lock_path(self):
+        lock_path = super(PlaylistWorker, self).lock_path()
+        return '{0}.{1}'.format(lock_path, self.worker_id())
 
-    paths = get_servers(worker_playlists)
-    balancer.update(paths)
-    # save_server_name(worker_playlists)
-    consume_from_balancer(balancer, worker_playlists, destination, encrypt)
-    return True
+    def worker_id(self):
+        return md5.md5(self.playlist).hexdigest()
 
+    def setup(self):
+        logging.debug('HLS CLIENT Started for {}'.format(self.playlist))
+        helpers.setup_logging(self.config, "worker for {}".format(self.playlist))
+        self.destination = self.config.get('hlsclient', 'destination')
+        self.encrypt = self.config.getboolean('hlsclient', 'encrypt')
+        not_modified_tolerance = self.config.getint('hlsclient', 'not_modified_tolerance')
+        self.balancer = Balancer(not_modified_tolerance)
 
-def start_as_worker(current_playlist):
-    config = helpers.load_config()
-    helpers.setup_logging(config, "worker for {}".format(current_playlist))
+    def run(self):
+        playlists = discover_playlists(self.config)
+        worker_playlists = self.filter_playlists_for_worker(playlists)
+        if not worker_playlists:
+            logging.warning("Playlist is not available anymore")
+            self.stop()
 
-    logging.debug('HLS CLIENT Started for {}'.format(current_playlist))
+        paths = get_servers(worker_playlists)
+        self.balancer.update(paths)
+        consume_from_balancer(self.balancer,
+                              worker_playlists,
+                              self.destination,
+                              self.encrypt)
 
-    destination = config.get('hlsclient', 'destination')
-    encrypt = config.getboolean('hlsclient', 'encrypt')
+    def filter_playlists_for_worker(self, playlists):
+        for stream, value in playlists['streams'].items():
+            if value['input-path'] == self.playlist:
+                return {"streams": {stream: value}}
+        return {}
 
-    not_modified_tolerance = config.getint('hlsclient', 'not_modified_tolerance')
-    balancer = Balancer(not_modified_tolerance)
-
-    lock_path = lock_path_for(config, current_playlist)
-    lock_timeout = config.getint('lock', 'timeout')
-    lock_expiration = config.getint('lock', 'expiration')
-    lock = ExpiringLinkLockFile(lock_path)
-
-    def release_lock(*args):
-        try:
-            logging.info('Interrupted. Releasing lock.')
-            lock.release_if_locking()
-        finally:
-            sys.exit(0)
-    signal.signal(signal.SIGTERM, release_lock)
-
-    while True:
-        try:
-            if lock.i_am_locking():
-                lock.update_lock()
-                if not run_worker_task(config, current_playlist, destination, balancer, encrypt):
-                    logging.warning("Playlist is not available anymore")
-                    lock.release_if_locking()
-                    return
-            elif lock.is_locked() and lock.expired(tolerance=lock_expiration):
-                logging.warning("Lock expired. Breaking it")
-                lock.break_lock()
-            elif lock.is_locked():
-                logging.warning("Someone else acquired the lock")
-                sys.exit(0)
-            else:
-                lock.acquire(timeout=lock_timeout)
-        except LockTimeout:
-            logging.debug("Unable to acquire lock")
-        except Exception as e:
-            logging.exception('An unknown error happened')
-        except KeyboardInterrupt:
-            logging.debug('Quitting...')
-            lock.release_if_locking()
-            return
-        time.sleep(0.1)
-
-
-
+    def lost_lock(self):
+        self.stop()
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        start_as_worker(sys.argv[1])
+        worker = PlaylistWorker(sys.argv[1])
+        worker.run_forever()
     else:
         start_as_master()
