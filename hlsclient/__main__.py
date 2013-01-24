@@ -14,11 +14,6 @@ from discover import discover_playlists, get_servers
 from worker import Worker
 
 
-def start_worker_in_background(playlist):
-    AFTER_FORK_DELAY = 0.1
-    os.spawnl(os.P_NOWAIT, sys.executable, '-m', 'hlsclient', playlist)
-
-
 class MasterWorker(Worker):
     def setup(self):
         self.sig_sent = False
@@ -49,11 +44,14 @@ class MasterWorker(Worker):
             worker = PlaylistWorker(playlist)
             if not worker.other_is_running():
                 logging.debug('No worker found for playlist %s' % playlist)
-                start_worker_in_background(playlist)
+                self.start_worker_in_background(playlist)
             else:
                 logging.debug('Worker found for playlist %s' % playlist)
 
         clean(self.destination, self.clean_maxage, self.ignores)
+
+    def start_worker_in_background(self, playlist):
+        os.spawnl(os.P_NOWAIT, sys.executable, '-m', 'hlsclient', playlist)
 
 
 class PlaylistWorker(Worker):
