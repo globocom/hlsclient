@@ -1,20 +1,16 @@
 import md5
 import logging
-import time
 import os
 import signal
 import sys
 
-from lockfile import LockTimeout
-from lock import ExpiringLinkLockFile
 
 import helpers
-
 from balancer import Balancer
 from consumer import consume_from_balancer
-from discover import discover_playlists, get_servers
 from combine import combine_playlists
 from cleaner import clean
+from discover import discover_playlists, get_servers
 from worker import Worker
 
 
