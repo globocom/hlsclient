@@ -1,12 +1,13 @@
-from lock import ExpiringLinkLockFile
 import logging
 import signal
 import sys
 import time
 
-
-import helpers
 from lockfile import LockTimeout
+
+from hlsclient import helpers
+from hlsclient.lock import ExpiringLinkLockFile
+
 
 class Worker(object):
     def __init__(self):
