@@ -1,12 +1,16 @@
 import os
 import time
+import random
 
 from lockfile.linklockfile import LinkLockFile
 
 class ExpiringLinkLockFile(LinkLockFile):
     def __init__(self, *args, **kwargs):
         LinkLockFile.__init__(self, *args, **kwargs)
-        self.unique_name += os.path.basename(self.path)
+        self.unique_name = "{original_name}_{base_path}_{random}".format(
+            original_name=self.unique_name,
+            base_path=os.path.basename(self.path),
+            random="%0x" % random.randint(0, 2**64))
 
     def expired(self, tolerance):
         return self.lock_age > tolerance
