@@ -3,7 +3,6 @@ import math
 import os
 import StringIO
 
-import helpers
 import m3u8
 from pkcs7 import PKCS7Encoder
 

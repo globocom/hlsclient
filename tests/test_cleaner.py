@@ -1,6 +1,5 @@
 import os.path
 import time
-import csv
 from hlsclient.helpers import load_config, get_ignore_patterns
 from hlsclient.cleaner import clean
 

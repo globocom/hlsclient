@@ -1,11 +1,7 @@
-import os
 import json
-import logging
 import urllib2
 import urlparse
 from collections import namedtuple
-
-import m3u8
 
 Server = namedtuple('Server', 'server port')
 

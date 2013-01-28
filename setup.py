@@ -15,6 +15,7 @@ setup(
     include_package_data=True,
     packages=[
         'hlsclient',
+        'hlsclient.workers',
         ],
     install_requires=[
         'futures==2.1.3',

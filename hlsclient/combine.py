@@ -1,5 +1,4 @@
 from copy import copy
-import os
 
 import m3u8
 
@@ -26,8 +25,8 @@ def get_actions(playlists, action_type):
 
 def dump_variant_playlist(playlists_data, action, path):
     'Saves variant m3u8 to file'
-    m3u8 = generate_variant_playlist(playlists_data, action)
-    m3u8.dump(path + action['output'])
+    playlist = generate_variant_playlist(playlists_data, action)
+    playlist.dump(path + action['output'])
 
 def generate_variant_playlist(playlists_data, action):
     'Generate variant m3u8 in memory'

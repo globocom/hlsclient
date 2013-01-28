@@ -10,9 +10,9 @@ import shutil
 import crypto
 from futures import ThreadPoolExecutor
 
-from hlsclient.transcode import transcode_playlist
-from hlsclient import helpers
-from hlsclient import atomic
+import helpers
+import atomic
+from transcode import transcode_playlist
 
 config = helpers.load_config()
 NUM_THREAD_WORKERS = config.getint('hlsclient', 'num_thread_workers')
@@ -30,16 +30,16 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
             port=playlist_resource.server.port,
             path=playlists['streams'][playlist_resource.key]['input-path'])
         try:
-            modified = consume(m3u8_uri, destination, encrypt)
+            segments_modified = consume(m3u8_uri, destination, encrypt)
         except (httplib.HTTPException, urllib2.HTTPError, IOError, OSError) as err:
             logging.warning(u'Notifying error for resource %s: %s' % (m3u8_uri, err))
             balancer.notify_error(playlist_resource.server, playlist_resource.key)
         else:
-            if modified:
+            if segments_modified:
                 logging.info('Notifying content modified: %s' % m3u8_uri)
                 balancer.notify_modified(playlist_resource.server, playlist_resource.key)
                 m3u8_path = os.path.join(build_full_path(destination, m3u8_uri), os.path.basename(m3u8_uri))
-                transcode_playlist(playlists, playlist_resource.key, modified, m3u8_path)
+                transcode_playlist(playlists, playlist_resource.key, segments_modified, m3u8_path)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
     with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:

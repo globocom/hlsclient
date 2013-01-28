@@ -12,9 +12,9 @@ def load_config(path=None):
         config.readfp(f)
     return config
 
-def setup_logging(config):
+def setup_logging(config, title):
     level = getattr(logging, config.get('log', 'level'))
-    format = '%(asctime)s - %(levelname)s - %(message)s'
+    format = '%(asctime)s - %(levelname)s [{}] - %(message)s'.format(title)
     try:
         filename = config.get('log', 'filename')
         handler = TimedRotatingFileHandler(filename, when='midnight', encoding='utf-8', interval=1)
