@@ -1,10 +1,12 @@
 import datetime
+import itertools
 import logging
 import md5
 import random
 
 from hlsclient import helpers
 from hlsclient.balancer import Balancer
+from hlsclient.combine import get_actions
 from hlsclient.consumer import consume_from_balancer
 from hlsclient.discover import discover_playlists, get_servers
 from hlsclient.workers.base_worker import Worker
@@ -12,8 +14,9 @@ from hlsclient.workers.base_worker import Worker
 MAX_TTL_IN_SECONDS = 600
 
 class PlaylistWorker(Worker):
-    def __init__(self, playlist):
+    def __init__(self, playlist, is_variant=False):
         self.playlist = playlist
+        self.is_variant = is_variant
         super(PlaylistWorker, self).__init__()
 
     def lock_path(self):
@@ -50,10 +53,15 @@ class PlaylistWorker(Worker):
                               self.encrypt)
 
     def filter_playlists_for_worker(self, playlists):
-        for stream, value in playlists['streams'].items():
-            if value['input-path'] == self.playlist:
-                return {"streams": {stream: value}}
-        return {}
+        if self.is_variant:
+            combine_actions = get_actions(playlists, "combine")
+            my_combine_actions = [action for action in combine_actions if action['output'] == self.playlist]
+            my_inputs = [action['input'] for action in my_combine_actions]
+            streams = itertools.chain(*my_inputs)
+            streams = [s for s in streams if s in playlists['streams']] # transcoded playlists are ignored
+        else:
+            streams = [self.playlist]
+        return {"streams": {stream: playlists['streams'][stream] for stream in streams}}
 
     def should_run(self):
         should_live = datetime.datetime.now() < self.death_time
