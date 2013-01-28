@@ -76,7 +76,10 @@ class PlaylistWorker(object):
             streams = [s for s in streams if s in playlists['streams']] # transcoded playlists are ignored
         else:
             streams = [self.playlist]
-        return {"streams": {stream: playlists['streams'][stream] for stream in streams}}
+
+        result = playlists.copy()
+        result["streams"] = {stream: playlists['streams'][stream] for stream in streams}
+        return result
 
     def should_run(self):
         should_live = datetime.datetime.now() < self.death_time
