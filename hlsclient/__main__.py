@@ -1,7 +1,7 @@
 import sys
 
-from workers.master import MasterWorker
-from workers.playlist import PlaylistWorker
+from hlsclient.workers.master import MasterWorker
+from hlsclient.workers.playlist import PlaylistWorker
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
