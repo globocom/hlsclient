@@ -4,17 +4,19 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 from hlsclient import helpers
 from hlsclient.combine import combine_playlists, get_actions
 from hlsclient.cleaner import clean
 from hlsclient.discover import discover_playlists
-from hlsclient.workers.base_worker import Worker
 from hlsclient.workers.playlist import PlaylistWorker
 
 
-class MasterWorker(Worker):
-    def setup(self):
+class MasterWorker(object):
+
+    def __init__(self):
+        self.config = helpers.load_config()
         self.sig_sent = False
         helpers.setup_logging(self.config, "master process")
         logging.debug('HLS CLIENT Started')
@@ -31,7 +33,20 @@ class MasterWorker(Worker):
         if not self.sig_sent:
             self.sig_sent = True
             os.killpg(0, signal.SIGTERM)
-        super(MasterWorker, self).interrupted(*args)
+        self.stop()
+
+    def run_forever(self):
+        signal.signal(signal.SIGTERM, self.interrupted)
+        while True:
+            try:
+                self.run()
+            except Exception as e:
+                logging.exception('An unknown error happened')
+            except KeyboardInterrupt:
+                logging.debug('Quitting...')
+                break
+            time.sleep(0.1)
+        self.stop()
 
     def run(self):
         playlists = discover_playlists(self.config)
@@ -65,3 +80,6 @@ class MasterWorker(Worker):
         if is_variant:
             args.append("IS_VARIANT")
         subprocess.Popen(args)
+
+    def stop(self):
+        sys.exit(0)
