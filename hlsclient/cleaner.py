@@ -1,7 +1,6 @@
 import os
 import threading
 import time
-import shutil
 import logging
 import re
 import fnmatch

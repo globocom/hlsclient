@@ -40,11 +40,11 @@ class MasterWorker(object):
         while True:
             try:
                 self.run()
-            except Exception as e:
-                logging.exception('An unknown error happened')
             except KeyboardInterrupt:
                 logging.debug('Quitting...')
                 break
+            except:
+                logging.exception('An unknown error happened')
             time.sleep(0.1)
         self.stop()
 

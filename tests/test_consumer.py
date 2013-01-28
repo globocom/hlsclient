@@ -1,9 +1,6 @@
-from collections import namedtuple
-from m3u8.model import Segment, Key
 import logging
 import m3u8
 import os
-import urllib
 import stat
 import StringIO
 import tempfile
@@ -11,7 +8,6 @@ import tempfile
 import hlsclient.consumer
 from .fake_m3u8_server import M3U8_SERVER, M3U8_HOST, M3U8_PORT
 from hlsclient import crypto
-from hlsclient import helpers
 from hlsclient.balancer import Balancer
 from hlsclient.discover import Server, get_servers
 

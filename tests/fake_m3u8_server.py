@@ -181,11 +181,11 @@ def key():
     return '0123456789abcdef'
 
 @route('/<:re:(high|low)(1|2)>.ts')
-def chunk():
+def raw_chunk():
     return 'FAKE TS\n'
 
 @route('/encrypted<:re:(1|2)>.ts')
-def chunk():
+def encrypted_chunk():
     '''
     The chunk was generated in the following way:
 
