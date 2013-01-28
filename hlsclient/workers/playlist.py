@@ -48,7 +48,7 @@ class PlaylistWorker(object):
             except KeyboardInterrupt:
                 logging.debug('Quitting...')
                 break
-            except:
+            except Exception:
                 logging.exception('An unknown error happened')
             time.sleep(0.1)
         self.stop()
