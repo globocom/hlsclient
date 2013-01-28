@@ -56,7 +56,7 @@ class PlaylistWorker(object):
     def run(self):
         playlists = discover_playlists(self.config)
         worker_playlists = self.filter_playlists_for_worker(playlists)
-        if not worker_playlists:
+        if not worker_playlists['streams']:
             logging.warning("Playlist is not available anymore")
             self.stop()
 
