@@ -70,6 +70,7 @@ def transcode(src, output):
         else:
             raise NotImplementedError("Unsupported type")
 
-    logging.debug('Calling FFMPEG with args={args}'.format(args=' '.join(map(str, args))))
+    args = map(str, args)
 
+    logging.debug('Calling FFMPEG with args={args}'.format(args=' '.join(args)))
     Popen(args).communicate()
