@@ -19,7 +19,7 @@ class Balancer(object):
 
     def update(self, keys):
         '''
-        ``keys`` is a dict returned from ``discover.discover()``
+        ``keys`` is a dict returned from ``discover.get_servers()``
         '''
         self._clean_removed_keys(keys)
         for key, servers in keys.items():
