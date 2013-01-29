@@ -43,6 +43,7 @@ class PlaylistWorker(object):
         while self.should_run():
             try:
                 self.run_if_locking()
+                time.sleep(0.1)
             except LockTimeout:
                 logging.debug("Unable to acquire lock")
             except KeyboardInterrupt:
@@ -50,7 +51,6 @@ class PlaylistWorker(object):
                 break
             except Exception:
                 logging.exception('An unknown error happened')
-            time.sleep(0.1)
         self.stop()
 
     def run(self):
