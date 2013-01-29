@@ -1,11 +1,11 @@
 import datetime
+import hashlib
 import itertools
 import logging
-import md5
 import random
-import time
 import signal
 import sys
+import time
 
 from lockfile import LockTimeout
 
@@ -103,7 +103,7 @@ class PlaylistWorker(object):
         return '{0}.{1}'.format(self.config.get('lock', 'path'), self.worker_id())
 
     def worker_id(self):
-        return md5.md5(self.playlist).hexdigest()
+        return hashlib.md5(self.playlist).hexdigest()
 
     def run_if_locking(self):
         if self.can_run():
