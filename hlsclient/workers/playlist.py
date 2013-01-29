@@ -74,8 +74,10 @@ class PlaylistWorker(object):
             my_inputs = [action['input'] for action in my_combine_actions]
             streams = itertools.chain(*my_inputs)
             streams = [s for s in streams if s in playlists['streams']] # transcoded playlists are ignored
-        else:
+        elif self.playlist in playlists['streams']:
             streams = [self.playlist]
+        else:
+            streams = []
 
         result = playlists.copy()
         result["streams"] = {stream: playlists['streams'][stream] for stream in streams}
