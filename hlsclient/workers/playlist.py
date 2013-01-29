@@ -106,17 +106,15 @@ class PlaylistWorker(object):
         return hashlib.md5(self.playlist).hexdigest()
 
     def run_if_locking(self):
-        if self.can_run():
-            self.lock.update_lock()
-            self.run()
-
-    def can_run(self):
         if self.other_is_running():
             logging.warning("Someone else acquired the lock")
             self.stop()
-        elif not self.lock.is_locked():
+            return
+        if not self.lock.is_locked():
             self.lock.acquire(timeout=self.lock_timeout)
-        return self.lock.i_am_locking()
+        if self.lock.i_am_locking():
+            self.lock.update_lock()
+            self.run()
 
     def other_is_running(self):
         other = self.lock.is_locked() and not self.lock.i_am_locking()
