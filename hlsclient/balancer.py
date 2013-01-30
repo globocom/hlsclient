@@ -1,5 +1,6 @@
 from collections import deque
 import datetime
+import itertools
 import logging
 
 from collections import namedtuple
@@ -12,76 +13,82 @@ class Balancer(object):
     NOT_MODIFIED_TOLERANCE = 8 # in seconds
 
     def __init__(self, not_modified_tolerance=None):
-        if not_modified_tolerance:
-            self.NOT_MODIFIED_TOLERANCE = not_modified_tolerance
-        self.keys = {}
+        self.NOT_MODIFIED_TOLERANCE = not_modified_tolerance or self.NOT_MODIFIED_TOLERANCE
+        self.keys = []
+        self.servers = deque()
         self.modified_at = {}
 
     def update(self, keys):
         '''
         ``keys`` is a dict returned from ``discover.get_servers()``
         '''
-        self._clean_removed_keys(keys)
-        for key, servers in keys.items():
-            self._update_key(key, servers)
+        self.keys = keys.keys()
+        intersection_servers = self._find_set_intersection(keys.values())
+
+        # remove what no longer exists
+        for old_server in list(self.servers):
+            if old_server not in intersection_servers:
+                self.servers.remove(old_server)
+
+        # add new servers
+        for new_server in intersection_servers:
+            if new_server not in self.servers:
+                self.servers.append(new_server)
+
+        for server in self.servers:
+            self.modified_at[server] = self._now()
+
 
     def notify_modified(self, server, key):
         '''
         Remembers that a given server returned a new playlist
         '''
-        self.modified_at[key] = self._now()
+        self.modified_at[server] = self._now()
 
     def notify_error(self, server, key):
         '''
         Remembers that a given server failed.
         This immediately changes the active server for this key, is another one exists.
         '''
-        if self._active_server_for_key(key) == server:
-            self._change_active_server(key)
+        if self._active_server() == server:
+            self._change_active_server()
 
     @property
     def actives(self):
         '''
         Returns a list of ``PlaylistResource``s
         '''
-        for key in self.keys:
-            active_server = self._active_server_for_key(key)
-            if self._outdated(active_server, key):
-                logging.warning("{server} outdated for stream {key}".format(server=active_server, key=key))
-                self._change_active_server(key)
-                active_server = self._active_server_for_key(key)
-            yield PlaylistResource(active_server, key)
+        active_server = self._active_server()
+        if self._outdated(active_server):
+            active_server = self._change_active_server()
+        return (PlaylistResource(active_server, key) for key in self.keys)
 
-    def _clean_removed_keys(self, new_keys):
-        removed_keys = set(self.keys.keys()).difference(new_keys.keys())
-        for key in removed_keys:
-            del self.modified_at[key]
-            del self.keys[key]
+    def _active_server(self):
+        if self.servers:
+            return self.servers[0]
 
-    def _update_key(self, key, servers):
-        active = self._active_server_for_key(key)
-        if active in servers:
-            self.keys[key] = deque([active])
-            self.keys[key].extend([server for server in servers if server != active])
-        else:
-            self.keys[key] = deque(servers)
-            self.modified_at[key] = None
+    def _rotate_servers(self):
+        self.servers.rotate(-1)
+        return self._active_server()
 
-    def _active_server_for_key(self, key):
-        servers = self.keys.get(key, [])
-        if servers:
-            return servers[0]
+    def _change_active_server(self):
+        retries = 0
+        max_retries = len(self.servers)
 
-    def _change_active_server(self, key):
-        self.keys[key].rotate(-1)
-        self.modified_at[key] = None
+        active_server = self._rotate_servers()
 
-    def _outdated(self, server, key):
-        last_change = self.modified_at.get(key, None)
-        if not last_change:
+        while self._outdated(active_server) and retries < max_retries:
+            logging.warning("{server} outdated".format(server=active_server))
+            active_server = self._rotate_servers()
+            retries += 1
+
+        return self._active_server()
+
+    def _outdated(self, server):
+        if not self.modified_at.get(server):
             # This server is new, so it can't be obsolete
             return False
-        delta_from_last_change = self._now() - last_change
+        delta_from_last_change = self._now() - self.modified_at[server]
         delta_tolerance = datetime.timedelta(seconds=self.NOT_MODIFIED_TOLERANCE)
         return delta_from_last_change > delta_tolerance
 
@@ -89,3 +96,13 @@ class Balancer(object):
         # The only reason for this to be a method
         # is that it's easier to monkey patch it
         return datetime.datetime.now()
+
+    def _find_set_intersection(self, groups):
+        # do not use `set()` because sets are unordered
+        # and the server list must preserve order
+        flatten = list(itertools.chain(*groups))
+        result = []
+        for elem in flatten:
+            if elem not in result and flatten.count(elem) == len(groups):
+                result.append(elem)
+        return result

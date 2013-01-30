@@ -1,6 +1,6 @@
 from collections import namedtuple
 import datetime
-from hlsclient.balancer import Balancer
+from hlsclient.balancer import Balancer, PlaylistResource
 
 FMS = namedtuple('FMS', ['server', 'port'])
 
@@ -90,7 +90,6 @@ def test_active_server_does_not_change_if_new_servers_added():
 	new_servers = ['http://server3', 'http://server4', 'http://server2']
 	b.update({PATH: new_servers})
 	assert [SERVERS[1]] == [s.server for s in b.actives]
-	assert set(new_servers) == set(b.keys[PATH])
 
 def test_paths_can_be_removed():
 	PATH = '/path'
@@ -122,3 +121,33 @@ def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch)
 	monkeypatch.setattr(b, '_now', lambda: now + datetime.timedelta(seconds=40))
 	b.notify_modified(SERVERS[1], PATH)
 	assert [SERVERS[1]] == [s.server for s in b.actives]
+
+def test_if_server_fails_for_any_stream_all_streams_should_switch_server():
+	PATH1 = '/path1'
+	PATH2 = '/path2'
+	SERVER1 = 'http://server1'
+	SERVER2 = 'http://server2'
+	SERVERS = [SERVER1, SERVER2]
+	paths = {PATH1: SERVERS, PATH2: SERVERS}
+	b = Balancer()
+	b.update(paths)
+
+	assert list(b.actives) == [PlaylistResource(SERVER1, PATH1), PlaylistResource(SERVER1, PATH2)]
+
+	b.notify_error(SERVER1, PATH1)
+
+	assert list(b.actives) == [PlaylistResource(SERVER2, PATH1), PlaylistResource(SERVER2, PATH2)]
+
+def test_notify_error_should_rotate_servers_while_there_are_available_servers():
+	PATH1 = '/path1'
+	PATH2 = '/path2'
+	SERVER1 = 'http://server1'
+	SERVER2 = 'http://server2'
+	SERVERS = [SERVER1, SERVER2]
+	paths = {PATH1: SERVERS, PATH2: SERVERS}
+	b = Balancer()
+	b.update(paths)
+
+	b.notify_error(SERVER1, PATH1)
+	b.notify_error(SERVER2, PATH1)
+	assert list(b.actives) == [PlaylistResource(SERVER1, PATH1), PlaylistResource(SERVER1, PATH2)]
