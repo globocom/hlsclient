@@ -229,9 +229,9 @@ def test_consume_from_balancer_should_report_content_modified(tmpdir):
     modified = []
     b = Balancer()
     b.update(get_servers(playlists))
-    b.notify_modified = lambda server, playlist: modified.append([server, playlist])
+    b.notify_modified = lambda: modified.append("MODIFIED")
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
-    assert modified == [[server, playlist]]
+    assert modified == ["MODIFIED"]
 
     expected_created = ['low.m3u8', 'low1.ts', 'low2.ts']
     resources_created = os.listdir(str(tmpdir))
@@ -250,7 +250,7 @@ def test_consume_from_balancer_should_not_report_content_modified_if_there_are_n
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
     modified = []
-    b.notify_modified = lambda server, playlist: modified.append([server, playlist])
+    b.notify_modified = lambda: modified.append("MODIFIED")
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
     assert modified == []
 
@@ -263,11 +263,11 @@ def test_consume_from_balancer_should_report_error(tmpdir, monkeypatch):
     errors = []
     b = Balancer()
     b.update(get_servers(playlists))
-    b.notify_error = lambda server, playlist: errors.append([server, playlist])
+    b.notify_error = lambda: errors.append("ERROR")
     monkeypatch.setattr(logging, 'warning', lambda warn: 0) # just to hide hlsclient warning
     hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
 
-    assert errors == [[server, playlist]]
+    assert errors == ["ERROR"]
 
 def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)

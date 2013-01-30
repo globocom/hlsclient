@@ -16,7 +16,7 @@ class Balancer(object):
         self.NOT_MODIFIED_TOLERANCE = not_modified_tolerance or self.NOT_MODIFIED_TOLERANCE
         self.keys = []
         self.servers = deque()
-        self.modified_at = {}
+        self.modified_at = None
 
     def update(self, keys):
         '''
@@ -35,23 +35,21 @@ class Balancer(object):
             if new_server not in self.servers:
                 self.servers.append(new_server)
 
-        for server in self.servers:
-            self.modified_at[server] = self._now()
+        self.modified_at = self._now()
 
 
-    def notify_modified(self, server, key):
+    def notify_modified(self):
         '''
         Remembers that a given server returned a new playlist
         '''
-        self.modified_at[server] = self._now()
+        self.modified_at = self._now()
 
-    def notify_error(self, server, key):
+    def notify_error(self):
         '''
         Remembers that a given server failed.
         This immediately changes the active server for this key, is another one exists.
         '''
-        if self._active_server() == server:
-            self._change_active_server()
+        self._change_active_server()
 
     @property
     def actives(self):
@@ -85,10 +83,7 @@ class Balancer(object):
         return self._active_server()
 
     def _outdated(self, server):
-        if not self.modified_at.get(server):
-            # This server is new, so it can't be obsolete
-            return False
-        delta_from_last_change = self._now() - self.modified_at[server]
+        delta_from_last_change = self._now() - self.modified_at
         delta_tolerance = datetime.timedelta(seconds=self.NOT_MODIFIED_TOLERANCE)
         return delta_from_last_change > delta_tolerance
 

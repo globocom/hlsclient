@@ -36,30 +36,16 @@ def test_active_server_changes_if_error_detected():
 
 	# Notify that the active server has failed
 	assert [SERVERS[0]] == [s.server for s in b.actives]
-	b.notify_error(SERVERS[0], PATH)
+	b.notify_error()
 
 	# Assert that the backups assume
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
-	b.notify_error(SERVERS[1], PATH)
+	b.notify_error()
 	assert [SERVERS[2]] == [s.server for s in b.actives]
 
 	# Assert that the first server resumes if backup fails
-	b.notify_error(SERVERS[2], PATH)
-	assert [SERVERS[0]] == [s.server for s in b.actives]
-
-def test_active_server_does_not_change_if_backup_fails():
-	PATH = '/path'
-	SERVERS = ['http://server1', 'http://server2']
-	paths = {PATH: SERVERS}
-	b = Balancer()
-	b.update(paths)
-
-	# Notify that the BACKUP server has failed
-	assert [SERVERS[0]] == [s.server for s in b.actives]
-	b.notify_error(SERVERS[1], PATH)
-
-	# Assert that the active server remains the same
+	b.notify_error()
 	assert [SERVERS[0]] == [s.server for s in b.actives]
 
 def test_active_server_does_not_change_if_paths_updated():
@@ -70,7 +56,7 @@ def test_active_server_does_not_change_if_paths_updated():
 	b.update(paths)
 
 	# Notify that active server has failed
-	b.notify_error(SERVERS[0], PATH)
+	b.notify_error()
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
 	b.update(paths)
@@ -84,7 +70,7 @@ def test_active_server_does_not_change_if_new_servers_added():
 	b.update(paths)
 
 	# Notify that active server has failed
-	b.notify_error(SERVERS[0], PATH)
+	b.notify_error()
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
 	new_servers = ['http://server3', 'http://server4', 'http://server2']
@@ -111,7 +97,7 @@ def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch)
 	now = datetime.datetime.now()
 
 	assert [SERVERS[0]] == [s.server for s in b.actives]
-	b.notify_modified(SERVERS[0], PATH)
+	b.notify_modified()
 
 	# 20 seconds later and playlist has not changed
 	monkeypatch.setattr(b, '_now', lambda: now + datetime.timedelta(seconds=20))
@@ -119,7 +105,7 @@ def test_active_server_changes_if_playlist_not_modified_for_a_while(monkeypatch)
 
 	# more 20 seconds later but backup is being updated
 	monkeypatch.setattr(b, '_now', lambda: now + datetime.timedelta(seconds=40))
-	b.notify_modified(SERVERS[1], PATH)
+	b.notify_modified()
 	assert [SERVERS[1]] == [s.server for s in b.actives]
 
 def test_if_server_fails_for_any_stream_all_streams_should_switch_server():
@@ -134,7 +120,7 @@ def test_if_server_fails_for_any_stream_all_streams_should_switch_server():
 
 	assert list(b.actives) == [PlaylistResource(SERVER1, PATH1), PlaylistResource(SERVER1, PATH2)]
 
-	b.notify_error(SERVER1, PATH1)
+	b.notify_error()
 
 	assert list(b.actives) == [PlaylistResource(SERVER2, PATH1), PlaylistResource(SERVER2, PATH2)]
 
@@ -148,6 +134,6 @@ def test_notify_error_should_rotate_servers_while_there_are_available_servers():
 	b = Balancer()
 	b.update(paths)
 
-	b.notify_error(SERVER1, PATH1)
-	b.notify_error(SERVER2, PATH1)
+	b.notify_error()
+	b.notify_error()
 	assert list(b.actives) == [PlaylistResource(SERVER1, PATH1), PlaylistResource(SERVER1, PATH2)]

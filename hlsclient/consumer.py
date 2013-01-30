@@ -33,11 +33,11 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
             segments_modified = consume(m3u8_uri, destination, encrypt)
         except (httplib.HTTPException, urllib2.HTTPError, IOError, OSError) as err:
             logging.warning(u'Notifying error for resource %s: %s' % (m3u8_uri, err))
-            balancer.notify_error(playlist_resource.server, playlist_resource.key)
+            balancer.notify_error()
         else:
             if segments_modified:
                 logging.info('Notifying content modified: %s' % m3u8_uri)
-                balancer.notify_modified(playlist_resource.server, playlist_resource.key)
+                balancer.notify_modified()
                 m3u8_path = os.path.join(build_full_path(destination, m3u8_uri), os.path.basename(m3u8_uri))
                 transcode_playlist(playlists, playlist_resource.key, segments_modified, m3u8_path)
             else:
