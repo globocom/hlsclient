@@ -269,6 +269,21 @@ def test_consume_from_balancer_should_report_error(tmpdir, monkeypatch):
 
     assert errors == ["ERROR"]
 
+def test_consume_from_balancer_should_timeout(tmpdir, monkeypatch):
+    server = Server(M3U8_HOST, M3U8_PORT)
+    playlist = 'slow'
+    uri = '/slow.m3u8'
+    playlists = {'streams': {playlist: {'input-path': uri, 'servers': [server]}}}
+
+    errors = []
+    b = Balancer()
+    b.update(get_servers(playlists))
+    b.notify_error = lambda: errors.append("ERROR")
+    monkeypatch.setattr(logging, 'warning', lambda warn: 0) # just to hide hlsclient warning
+    hlsclient.consumer.consume_from_balancer(b, playlists, str(tmpdir))
+
+    assert errors == ["ERROR"]
+
 def test_consume_from_balancer_should_transcode_to_audio(tmpdir):
     server = Server(M3U8_HOST, M3U8_PORT)
     playlist = 'real'

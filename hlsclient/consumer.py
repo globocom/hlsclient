@@ -8,7 +8,7 @@ import m3u8
 import shutil
 
 import crypto
-from futures import ThreadPoolExecutor
+from futures import ThreadPoolExecutor, TimeoutError
 
 import helpers
 import atomic
@@ -17,6 +17,7 @@ from transcode import transcode_playlist
 config = helpers.load_config()
 NUM_THREAD_WORKERS = config.getint('hlsclient', 'num_thread_workers')
 DOWNLOAD_TIMEOUT = config.getint('hlsclient', 'download_timeout')
+CONSUME_TIMEOUT = config.getint('hlsclient', 'consume_timeout')
 
 def consume_from_balancer(balancer, playlists, destination, encrypt=False):
     '''
@@ -42,8 +43,11 @@ def consume_from_balancer(balancer, playlists, destination, encrypt=False):
                 transcode_playlist(playlists, playlist_resource.key, segments_modified, m3u8_path)
             else:
                 logging.debug('Content not modified: %s' % m3u8_uri)
-    with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
-        list(executor.map(consume_resource, balancer.actives))
+    try:
+        with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
+            list(executor.map(consume_resource, balancer.actives, timeout=CONSUME_TIMEOUT))
+    except TimeoutError:
+        balancer.notify_error()
 
 def consume(m3u8_uri, destination_path, encrypt=False):
     '''
@@ -129,7 +133,7 @@ def download_segments(playlist, destination_path, new_key):
             raise
 
     with ThreadPoolExecutor(max_workers=NUM_THREAD_WORKERS) as executor:
-        downloads = executor.map(download, uris)
+        downloads = executor.map(download, uris, timeout=CONSUME_TIMEOUT)
         return list(downloads)
 
 def save_m3u8(playlist, m3u8_uri, full_path, new_key=False):

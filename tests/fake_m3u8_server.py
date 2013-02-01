@@ -172,6 +172,18 @@ def real_content_playlist():
 #EXT-X-ENDLIST
 '''.format(server=M3U8_SERVER)
 
+@route('/slow.m3u8')
+def slow_playlist():
+    response.set_header('Content-Type', 'application/vnd.apple.mpegurl')
+    chunks = ['#EXTINF:100,\n{server}/low{i}.ts'.format(server=M3U8_SERVER, i=i)
+                for i in xrange(10000)]
+    return '''\
+#EXTM3U
+#EXT-X-TARGETDURATION:200
+{chunks}
+#EXT-X-ENDLIST
+'''.format(chunks='\n'.join(chunks))
+
 @route('/data/<path:path>')
 def serve_static_file(path):
     return static_file(path, root='tests/data')
