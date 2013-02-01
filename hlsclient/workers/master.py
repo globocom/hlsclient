@@ -24,6 +24,9 @@ class MasterWorker(object):
 
         # ignore all comma separated wildcard names for `clean` call
         self.clean_maxage = self.config.getint('hlsclient', 'clean_maxage')
+        lock_expiration = self.config.getint('lock', 'expiration')
+        assert self.clean_maxage > lock_expiration
+
         self.ignores = helpers.get_ignore_patterns(self.config)
 
         # Setup process group, so we can kill the childs

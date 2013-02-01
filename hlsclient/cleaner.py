@@ -6,7 +6,7 @@ import re
 import fnmatch
 
 
-FILES_PATTERN = re.compile('.+\.(ts|m3u8|aac|bin)$')
+FILES_PATTERN = re.compile('.+\.(ts|m3u8|aac|bin|lock)$')
 is_cleaning = False
 
 def path_age(path):

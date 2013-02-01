@@ -21,8 +21,8 @@ def test_should_remove_old_files(tmpdir):
 def test_should_remove_old_files_and_directories(tmpdir):
     tmpdir = str(tmpdir)
     dir1 = os.path.join(tmpdir, 'dir1')
-    old_fnames = 'old1.ts old2.ts old3.ts'.split()
-    fresh_files = 'a.ts b.ts c.ts'.split()
+    old_fnames = 'old1.ts old2.ts old3.ts old.lock'.split()
+    fresh_files = 'a.ts b.ts c.ts new.lock'.split()
     os.makedirs(dir1)
 
     create_old_files(tmpdir, old_fnames, 60 * SECONDS)
