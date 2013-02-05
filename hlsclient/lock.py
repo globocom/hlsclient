@@ -7,6 +7,9 @@ from lockfile.linklockfile import LinkLockFile
 class ExpiringLinkLockFile(LinkLockFile):
     def __init__(self, *args, **kwargs):
         LinkLockFile.__init__(self, *args, **kwargs)
+        dirname = os.path.dirname(self.path)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
         self.unique_name = "{original_name}_{base_path}_{random}.lock".format(
             original_name=self.unique_name,
             base_path=os.path.basename(self.path),
