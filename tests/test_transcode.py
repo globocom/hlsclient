@@ -1,5 +1,6 @@
-from xml.dom.minidom import parseString
+import os
 from subprocess import Popen, PIPE
+from xml.dom.minidom import parseString
 
 from hlsclient.transcode import transcode
 
@@ -9,7 +10,10 @@ def get_media_info(path):
     return parseString(str(result[0]))
 
 def get_xml_tag_text_value(node, tag):
-    return node.getElementsByTagName(tag)[0].firstChild.data
+    try:
+        return node.getElementsByTagName(tag)[0].firstChild.data
+    except IndexError:
+        raise IndexError("Could not find tag '{}' on '''{}'''".format(tag, node.toprettyxml()))
 
 def test_extracts_audio_from_ts(tmpdir):
     output_path = tmpdir.join("output.aac")
@@ -27,7 +31,9 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     audio_output_path = tmpdir.join("output.aac")
     video_output_path = tmpdir.join("tvglobo_200.ts")
 
-    transcode(src="tests/data/sample.ts", output=[
+    sample_path = os.path.join(os.path.dirname(__file__), 'data', 'sample.ts')
+
+    transcode(src=sample_path, output=[
         {"path": str(video_output_path),
          "type": "video",
          "video-bitrate": "100000",
@@ -53,5 +59,5 @@ def test_transcode_video_and_audio_from_ts(tmpdir):
     assert '100.0 Kbps' == get_xml_tag_text_value(video_track, "Nominal_bit_rate")
     assert '32 pixels' == get_xml_tag_text_value(video_track, "Width")
     assert '24 pixels' == get_xml_tag_text_value(video_track, "Height")
-    assert 'High@L3.0' == get_xml_tag_text_value(video_track, "Format_profile")
+    assert 'High@L1.1' == get_xml_tag_text_value(video_track, "Format_profile")
     assert 'Advanced Audio Codec' == get_xml_tag_text_value(audio_track, "Format_Info")

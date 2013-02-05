@@ -5,7 +5,7 @@ import os
 import m3u8
 from subprocess import Popen
 
-DEFAULT_VIDEO_ARGS = "-f mpegts -acodec libfaac -ar 48000 -ab 64k -vcodec libx264 -flags +loop -cmp +chroma -subq 5 -trellis 1 -refs 1 -coder 0 -me_range 16 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -maxrate 96k -bufsize 96k -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -level 30 -g 30".split(' ')
+DEFAULT_VIDEO_ARGS = "-f mpegts -acodec libfaac -vcodec libx264".split(' ')
 FFMPEG_THREADS_PER_FILE = 4
 
 def transcode_playlist(playlists, modified_playlist, segments, m3u8_path):
