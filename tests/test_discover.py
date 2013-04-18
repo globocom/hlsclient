@@ -79,6 +79,10 @@ api_url = http://localhost:4422/mbr-tests.m3u8
 
     assert expected_result == paths
 
+def test_url_to_server_should_handle_https():
+    server = hlsclient.discover._url_to_server("https://serv1.com")
+    assert 443 == server.port
+    assert "https://serv1.com" == server.server
 
 def test_get_servers_from_playlists():
     playlists = {"streams": {"hls100": {'input-path': '/hls100.m3u8', 'servers': ['A', 'B']}}}

@@ -37,5 +37,6 @@ def _get_streams_from_url(url):
 def _url_to_server(server):
     parsed_url = urlparse.urlparse(server)
     server_url = '{scheme}://{hostname}'.format(scheme=parsed_url.scheme, hostname=parsed_url.hostname)
-    port = parsed_url.port or 80
+    default_port = 443 if parsed_url.scheme == 'https' else 80
+    port = parsed_url.port or default_port
     return Server(server=server_url, port=port)
